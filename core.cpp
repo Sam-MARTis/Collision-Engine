@@ -13,7 +13,7 @@
 #define STARTING_VELOCITY_RANGE 10
 #define BOUNDARY_X 800.0f
 #define BOUNDARY_Y 800.0f
-#define TIME_STEP 0.0005f
+#define TIME_STEP 0.0001f
 
 
 #define DEBUG_MODE true
@@ -99,7 +99,39 @@ void handle_collision(float *pos, float *vel, int id1, int id2){
     pos[p2+1] += (ny * ( RADIUS - distance));
 }
 
-void n_square_collision_solve(){
+void n_square_collision_solve(float *pos, float *vel, int p_count, int iterations){
+    for(int iteration =0; iteration< iterations; iteration++){
+        for(int i = 0; i<p_count-1; i++){
+            for(int j=0; j<p_count; j++){
+                handle_collision(pos, vel, i+1, j+1);
+            }
+        }
+    }
+}
+void handle_collision_grid(float *pos, float* vel, unsigned int* grid, int countx, int county, int x_idx, int y_idx, int p_id){
+    for(int i=-1; i<=1; i++){
+        for(int j=-1; j<=1; j++){
+            const int p2 = grid[(x_idx+i) + (y_idx+j)*countx];
+            if((p2 != 0) && (p2 != p_id) ){
+                handle_collision(pos, vel, p_id, p2);
+            }
+        }
+    }
+}
+
+
+void grid_collision_solve(float *pos, float* vel, unsigned int* grid, int countx, int county, int p_count, float cell_dx, float cell_dy){
+
+    for(int i=0; i<p_count; i++){
+        const int x_idx = floorf(pos[i * 2] / cell_dx);
+        const int y_idx = floorf(pos[i * 2 + 1] / cell_dy);
+        handle_collision_grid(pos, vel, grid, countx, county, x_idx, y_idx, i+1);
+    }
+
+    // for(int i=0; i<countx; i++){
+    //     for(int j=0; j<county; j++){
+    //     }
+    // }
 
 }
 
