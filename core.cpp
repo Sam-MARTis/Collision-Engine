@@ -89,14 +89,17 @@ void handle_collision(float *pos, float *vel, int id1, int id2){
     const float nx = dx/distance;
     const float ny = dy/distance;
     const float dot_product = nx* (vel[p1] - vel[p2]) + ny*(vel[p1+1] - vel[p2+1]);
-    vel[p1] -= 1 * dot_product * nx *INTERNAL_DAMPING;
-    vel[p1+1] -= 1 * dot_product * ny *INTERNAL_DAMPING;
-    vel[p2] += 1 * dot_product * nx*INTERNAL_DAMPING;
-    vel[p2+1] += 1 * dot_product * ny*INTERNAL_DAMPING;
-    pos[p1] -= (nx * ( RADIUS - distance));
-    pos[p1+1] -= (ny * ( RADIUS - distance));
-    pos[p2] += (nx * ( RADIUS - distance));
-    pos[p2+1] += (ny * ( RADIUS - distance));
+    const float x_push = dot_product * nx *INTERNAL_DAMPING;
+    const float y_push =  dot_product * ny *INTERNAL_DAMPING;
+    const float dR = (float)RADIUS-distance;
+    vel[p1] -= x_push;
+    vel[p1+1] -= y_push;
+    vel[p2] += x_push;
+    vel[p2+1] += y_push;
+    pos[p1] -= (nx * dR);
+    pos[p1+1] -= (ny * dR);
+    pos[p2] += (nx * dR);
+    pos[p2+1] += (ny * dR);
 }
 
 void n_square_collision_solve(float *pos, float *vel, int p_count, int iterations){
@@ -127,12 +130,6 @@ void grid_collision_solve(float *pos, float* vel, unsigned int* grid, int countx
         const int y_idx = floorf(pos[i * 2 + 1] / cell_dy);
         handle_collision_grid(pos, vel, grid, countx, county, x_idx, y_idx, i+1);
     }
-
-    // for(int i=0; i<countx; i++){
-    //     for(int j=0; j<county; j++){
-    //     }
-    // }
-
 }
 
 
