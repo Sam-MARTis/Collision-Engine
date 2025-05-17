@@ -35,7 +35,11 @@
 
 
 // #define DEBUG_MODE true
-#define PERFORMANCE_DEBUG_MODE
+// #define PERFORMANCE_DEBUG_MODE
+
+
+
+
 /*
 step took: 0.063394ms
 Collision solver took: 3.84394ms
@@ -211,11 +215,11 @@ void updateGrid(const float *pos, unsigned int *grid, const int& p_count, const 
     
 }
 
-void handle_collision(float *pos, const int& id1, const int& id2){
+void handle_collision(float *pos, float *pos_ref, const int& id1, const int& id2){
     const int p1 = (id1)*2;
     const int p2 = (id2)*2;
-    const float dx = pos[p2] - pos[p1];
-    const float dy = pos[p2+1] - pos[p1+1];
+    const float dx = pos_ref[p2] - pos_ref[p1];
+    const float dy = pos_ref[p2+1] - pos_ref[p1+1];
     const float distance_squared = pow(dx, 2) + pow(dy, 2);
     if(distance_squared> RADIUS_SQUARED_TIMES_FOUR){
         return;
@@ -231,14 +235,14 @@ void handle_collision(float *pos, const int& id1, const int& id2){
     pos[p2+1] += (ny * dR);
 }
 
-void handle_collision_grid(float *pos, const unsigned int* grid, const int& countx, const int& county, const int& x_idx, const int& y_idx, const int& p_id){
+void handle_collision_grid(float *pos, float* pos_copy, const unsigned int* grid, const int& countx, const int& county, const int& x_idx, const int& y_idx, const int& p_id){
     for(int i= -NEIGHBOURHOOD_RADIUS; i<=NEIGHBOURHOOD_RADIUS; i++){
         for(int j= -NEIGHBOURHOOD_RADIUS; j<=NEIGHBOURHOOD_RADIUS; j++){
             const int idx_to_check = ((x_idx+i)+(y_idx+j)*countx)*(GRID_OVERLAP_TOLERANCE+1);
             const int& cell_count = grid[idx_to_check];
             if(cell_count==0) continue;
             for(int k=1; k<=cell_count; k++){
-                handle_collision(pos, p_id, grid[idx_to_check+k]);
+                handle_collision(pos, pos_copy, p_id, grid[idx_to_check+k]);
             }
             // const int p2 = grid[(x_idx+i) + (y_idx+j)*countx];
             // if((p2 != 0) && (p2 != p_id) ){
@@ -253,17 +257,20 @@ void grid_collision_solve(float *pos, const unsigned int* grid, const int& count
     #ifdef PERFORMANCE_DEBUG_MODE
     Timer timer("Collision solver");
     #endif
+    float pos_copy[2*p_count];
+    std::memcpy(pos_copy, pos, 2*particle_count*sizeof(float));
     for(int i=0; i<p_count; i++){
         const int x_idx = floorf(pos[i * 2] / cell_dx);
         const int y_idx = floorf(pos[i * 2 + 1] / cell_dy);
-        handle_collision_grid(pos, grid, countx, county, x_idx, y_idx, i);
+        handle_collision_grid(pos, pos_copy, grid, countx, county, x_idx, y_idx, i);
     }
 }
+
 void n_square_collision_solve(float *pos, const int& p_count, const int& iterations){
     for(int iteration =0; iteration< iterations; iteration++){
         for(int i = 0; i<p_count-1; i++){
             for(int j=i; j<p_count; j++){
-                handle_collision(pos, i, j);
+                handle_collision(pos, pos, i, j);
             }
         }
     }
