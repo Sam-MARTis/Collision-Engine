@@ -5,6 +5,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
+#include <chrono>
 
 #define DEFAULT_PARTICLE_COUNT 10000
 #define DIMENSIONS 2
@@ -33,9 +34,16 @@
 #define MAGNIFICATION 1.5f
 
 
-
-
 // #define DEBUG_MODE true
+#define PERFORMANCE_DEBUG_MODE
+/*
+step took: 0.063394ms
+Collision solver took: 3.84394ms
+Update Grid took: 0.048132ms
+*/
+
+
+
 
 unsigned int particle_count;
 const float G = 9.81;
@@ -76,6 +84,22 @@ sf::Color hueToColor(float hueDegrees) {
 
 
 
+struct Timer
+{
+    std::chrono::time_point<std::chrono::high_resolution_clock> start, end;
+    std::chrono::duration<float> duration;
+    std::string name;
+
+    Timer(std::string in){
+        start = std::chrono::high_resolution_clock::now();
+        name = in;
+    }
+    ~Timer(){
+        end = std::chrono::high_resolution_clock::now();
+        duration = end-start;
+        std::cout<<name<<" took: " << duration.count()*1000.0f<<"ms\n";
+    }
+};
 
 
 void initializeParticles(float *pos, float *init_pos, float *col, const int& count, const float& dt)
@@ -109,6 +133,9 @@ void cacheColours(float* col, const int& particle_count, const std::string& file
 }
 void stepParticles(float *pos, float *prev_pos, const int& count, const float& dt)
 {
+    #ifdef PERFORMANCE_DEBUG_MODE
+    Timer timer("step");
+    #endif
     for (int i = 0; i < count; i++)
     {
         // pos[i * 2] += vel[i * 2] * dt;
@@ -148,7 +175,10 @@ void stepParticles(float *pos, float *prev_pos, const int& count, const float& d
 
 }
 void updateGrid(const float *pos, unsigned int *grid, const int& p_count, const int& countx, const int& county, const float& cell_dx, const float& cell_dy)
-{
+{   
+    #ifdef PERFORMANCE_DEBUG_MODE
+    Timer timer("Update Grid");
+    #endif
     memset(grid, 0, sizeof(float) * countx * county*(GRID_OVERLAP_TOLERANCE+1));
 
     
@@ -220,7 +250,9 @@ void handle_collision_grid(float *pos, const unsigned int* grid, const int& coun
 
 
 void grid_collision_solve(float *pos, const unsigned int* grid, const int& countx, const int& county, const int& p_count, const float& cell_dx, const float& cell_dy){
-
+    #ifdef PERFORMANCE_DEBUG_MODE
+    Timer timer("Collision solver");
+    #endif
     for(int i=0; i<p_count; i++){
         const int x_idx = floorf(pos[i * 2] / cell_dx);
         const int y_idx = floorf(pos[i * 2 + 1] / cell_dy);
