@@ -11,6 +11,7 @@
 #define RADIUS 5
 #define RADIUS_SQUARED_TIMES_FOUR 100
 #define STARTING_VELOCITY_RANGE 10
+#define GRID_OVERLAP_TOLERANCE 5
 #define BOUNDARY_X 800.0f
 #define BOUNDARY_Y 800.0f
 #define TIME_STEP 0.0001f
@@ -51,8 +52,7 @@ void updateGrid(float *pos, unsigned int *grid, int p_count, const int countx, c
 {
     memset(grid, 0, sizeof(float) * countx * county);
 
-    if (DEBUG_MODE)
-    {
+    #ifdef DEBUG_MODE
         for (int i = 0; i < p_count; i++)
         {
             const int x_idx = floorf(pos[i * 2] / cell_dx);
@@ -63,8 +63,8 @@ void updateGrid(float *pos, unsigned int *grid, int p_count, const int countx, c
             }
             grid[x_idx + y_idx * countx] = i + 1;
         }
-    }
-    else
+    
+    #else
     {
         for (int i = 0; i < p_count; i++)
         {
@@ -73,6 +73,7 @@ void updateGrid(float *pos, unsigned int *grid, int p_count, const int countx, c
             grid[x_idx + y_idx * countx] = i + 1;
         }
     }
+    #endif
 }
 
 void handle_collision(float *pos, float *vel, int id1, int id2){
