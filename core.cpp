@@ -26,7 +26,7 @@
 
 #define BOUNDARY_X 1000.0f
 #define BOUNDARY_Y 600.0f
-#define PADDING 20*NEIGHBOURHOOD_RADIUS
+#define PADDING 10*NEIGHBOURHOOD_RADIUS
 #define TIME_STEP 0.005f
 #define ITERATIONS_PER_DRAW 2
 #define GRID_CALCULATIONS_PER_ITER 1
@@ -56,14 +56,14 @@ Update Grid took: 0.048132ms
 
 unsigned int particle_count;
 const float G = 9.81;
-const int GRID_CELLS_COUNT_X = ceil(BOUNDARY_X / (2.0f*RADIUS));
-const int GRID_CELLS_COUNT_Y = ceil(BOUNDARY_Y / (2.0f*RADIUS));
-const int WORK_UNIT_CELLS_X = ceil((1.0f*GRID_CELLS_COUNT_X)/THREADS_X);
-const int WORK_UNIT_CELLS_Y = ceil((1.0f*GRID_CELLS_COUNT_Y)/THREADS_Y);
+const int GRID_CELLS_COUNT_X = ceil((BOUNDARY_X) / (2.0f*RADIUS));
+const int GRID_CELLS_COUNT_Y = ceil((BOUNDARY_Y) / (2.0f*RADIUS));
 // const int GRID_CELLS_COUNT_Y = 120;
 // const int GRID_CELLS_COUNT_X = 120;
-const float GRID_CELL_DX = BOUNDARY_X / ((float)GRID_CELLS_COUNT_X);
-const float GRID_CELL_DY = BOUNDARY_Y / ((float)GRID_CELLS_COUNT_Y);
+const float GRID_CELL_DX = (BOUNDARY_X) / ((float)GRID_CELLS_COUNT_X);
+const float GRID_CELL_DY = (BOUNDARY_Y) / ((float)GRID_CELLS_COUNT_Y);
+const int WORK_UNIT_CELLS_X = ceil((1.0f*GRID_CELLS_COUNT_X - (1.0f*PADDING)/GRID_CELL_DX)/THREADS_X);
+const int WORK_UNIT_CELLS_Y = ceil((1.0f*GRID_CELLS_COUNT_Y - (1.0f*PADDING)/GRID_CELL_DY)/THREADS_Y);
 
 // const int 
 
@@ -315,18 +315,69 @@ void grid_collision_solve_iterate_grid(float *pos, const unsigned int* grid, con
     }
 }
 
-void thread_collision_solve_grid(float *pos, const unsigned int* grid, const int& countx, const int& county, const int& p_count, const float& cell_dx, const float& cell_dy, const int& threadIdx){
+void thread_collision_solve_grid(float *pos, const unsigned int* grid, const int& countx, const int& county, const int& p_count, const float& cell_dx, const float& cell_dy, const int& thread_start_X, const int& thread_start_Y, const int& gridx, const int& gridy){
+    // he master thread dispatcher calls this function with proper arguements
     #ifdef PERFORMANCE_DEBUG_MODE
     Timer timer("Collision solver");
     #endif
 
-    for(int i=2*NEIGHBOURHOOD_RADIUS; i<countx - 2*NEIGHBOURHOOD_RADIUS; i++){
-        for(int j=2*NEIGHBOURHOOD_RADIUS; j<county - 2*NEIGHBOURHOOD_RADIUS; j++){
+
+    for(int i=thread_start_X; i<thread_start_X+gridx; i++){
+        for(int j=thread_start_Y; j<thread_start_Y+gridy; j++){
             const int idx_to_check = ((i)+(j)*countx)*(GRID_OVERLAP_TOLERANCE+1);
             if(grid[idx_to_check]==0) continue;
             handle_collision_grid_iterate_grid(pos, grid, countx, county, i, j);
         }
     }
+}
+
+void solve_collision_threads_grid(float *pos, const unsigned int* grid, const int& countx, const int& county, const int& p_count, const float& cell_dx, const float& cell_dy){
+    // Master dispatcher. Is reponsible for calling the threads after assigning them the proper domains to work on. race conditions allowed for now. 
+    const int cell_padding = 3*NEIGHBOURHOOD_RADIUS;
+    for(int i=1; i<THREADS_X-1; i++){
+        const int xidx = i*WORK_UNIT_CELLS_X;
+        //j==0 case
+        thread_collision_solve_grid(pos, grid, countx, county, p_count, cell_dx, cell_dy, xidx, cell_padding, WORK_UNIT_CELLS_X, WORK_UNIT_CELLS_Y);
+        
+        for(int j=1; j<THREADS_Y-1; j++){
+            const int yidx = j*WORK_UNIT_CELLS_Y;
+            thread_collision_solve_grid(pos, grid, countx, county, p_count, cell_dx, cell_dy, xidx, yidx, WORK_UNIT_CELLS_X, WORK_UNIT_CELLS_Y);
+        }
+        //j==THREADS_Y-1 case
+        const int final_yidx = (THREADS_Y-1)*WORK_UNIT_CELLS_Y;
+        thread_collision_solve_grid(pos, grid, countx, county, p_count, cell_dx, cell_dy, xidx, final_yidx, WORK_UNIT_CELLS_X, WORK_UNIT_CELLS_Y-cell_padding);
+        
+    }
+
+    //i==0
+    const int gridx = WORK_UNIT_CELLS_X-cell_padding;
+    const int xidx = cell_padding;
+    const int xidx2 = WORK_UNIT_CELLS_X - cell_padding;
+
+
+    thread_collision_solve_grid(pos, grid, countx, county, p_count, cell_dx, cell_dy, xidx, cell_padding, WORK_UNIT_CELLS_X, WORK_UNIT_CELLS_Y);
+        
+        for(int j=1; j<THREADS_Y-1; j++){
+            const int yidx = j*WORK_UNIT_CELLS_Y;
+            thread_collision_solve_grid(pos, grid, countx, county, p_count, cell_dx, cell_dy, xidx, yidx, WORK_UNIT_CELLS_X, WORK_UNIT_CELLS_Y);
+        }
+        //j==THREADS_Y-1 case
+        const int final_yidx = (THREADS_Y-1)*WORK_UNIT_CELLS_Y;
+    thread_collision_solve_grid(pos, grid, countx, county, p_count, cell_dx, cell_dy, xidx, final_yidx, WORK_UNIT_CELLS_X, WORK_UNIT_CELLS_Y-cell_padding);
+
+
+
+    
+    thread_collision_solve_grid(pos, grid, countx, county, p_count, cell_dx, cell_dy, xidx2, cell_padding, WORK_UNIT_CELLS_X, WORK_UNIT_CELLS_Y);
+        
+    for(int j=1; j<THREADS_Y-1; j++){
+        const int yidx = j*WORK_UNIT_CELLS_Y;
+        thread_collision_solve_grid(pos, grid, countx, county, p_count, cell_dx, cell_dy, xidx2, yidx, WORK_UNIT_CELLS_X, WORK_UNIT_CELLS_Y);
+    }
+    //j==THREADS_Y-1 case
+    const int final_yidx = (THREADS_Y-1)*WORK_UNIT_CELLS_Y;
+    thread_collision_solve_grid(pos, grid, countx, county, p_count, cell_dx, cell_dy, xidx2, final_yidx, WORK_UNIT_CELLS_X, WORK_UNIT_CELLS_Y-cell_padding);
+
 }
 
 
