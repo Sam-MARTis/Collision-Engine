@@ -7,11 +7,11 @@
 #include <fstream>
 #include <chrono>
 
-#define DEFAULT_PARTICLE_COUNT 10000
+#define DEFAULT_PARTICLE_COUNT 7000
 #define DIMENSIONS 2
 #define INTERNAL_DAMPING 0.0f
 #define WALL_DAMPING 0.1f
-#define RADIUS 2
+#define RADIUS 1
 #define RADIUS_SQUARED_TIMES_FOUR 4*RADIUS*RADIUS
 #define STARTING_VELOCITY_RANGE 10
 #define GRID_OVERLAP_TOLERANCE 2
@@ -24,14 +24,19 @@
 #define CACHE_FILE "colours_cache.txt"
 
 
-#define BOUNDARY_X 550.0f
-#define BOUNDARY_Y 550.0f
-#define PADDING 50.0f
-#define TIME_STEP 0.015f
+#define BOUNDARY_X 1000.0f
+#define BOUNDARY_Y 600.0f
+#define PADDING 20*NEIGHBOURHOOD_RADIUS
+#define TIME_STEP 0.005f
 #define ITERATIONS_PER_DRAW 2
 #define GRID_CALCULATIONS_PER_ITER 1
 
 #define MAGNIFICATION 1.5f
+
+
+
+#define THREADS_X 5
+#define THREADS_Y 3
 
 
 // #define DEBUG_MODE true
@@ -51,12 +56,16 @@ Update Grid took: 0.048132ms
 
 unsigned int particle_count;
 const float G = 9.81;
-const int GRID_CELLS_COUNT_X = ceil(BOUNDARY_X / (2*RADIUS));
-const int GRID_CELLS_COUNT_Y = ceil(BOUNDARY_Y / (2*RADIUS));
+const int GRID_CELLS_COUNT_X = ceil(BOUNDARY_X / (2.0f*RADIUS));
+const int GRID_CELLS_COUNT_Y = ceil(BOUNDARY_Y / (2.0f*RADIUS));
+const int WORK_UNIT_CELLS_X = ceil((1.0f*GRID_CELLS_COUNT_X)/THREADS_X);
+const int WORK_UNIT_CELLS_Y = ceil((1.0f*GRID_CELLS_COUNT_Y)/THREADS_Y);
 // const int GRID_CELLS_COUNT_Y = 120;
 // const int GRID_CELLS_COUNT_X = 120;
 const float GRID_CELL_DX = BOUNDARY_X / ((float)GRID_CELLS_COUNT_X);
 const float GRID_CELL_DY = BOUNDARY_Y / ((float)GRID_CELLS_COUNT_Y);
+
+// const int 
 
 float randf(){
     return (float)rand()/RAND_MAX;
@@ -215,11 +224,11 @@ void updateGrid(const float *pos, unsigned int *grid, const int& p_count, const 
     
 }
 
-void handle_collision(float *pos, float *pos_ref, const int& id1, const int& id2){
+void handle_collision(float *pos, const int& id1, const int& id2){
     const int p1 = (id1)*2;
     const int p2 = (id2)*2;
-    const float dx = pos_ref[p2] - pos_ref[p1];
-    const float dy = pos_ref[p2+1] - pos_ref[p1+1];
+    const float dx = pos[p2] - pos[p1];
+    const float dy = pos[p2+1] - pos[p1+1];
     const float distance_squared = pow(dx, 2) + pow(dy, 2);
     if(distance_squared> RADIUS_SQUARED_TIMES_FOUR){
         return;
@@ -235,14 +244,14 @@ void handle_collision(float *pos, float *pos_ref, const int& id1, const int& id2
     pos[p2+1] += (ny * dR);
 }
 
-void handle_collision_grid(float *pos, float* pos_copy, const unsigned int* grid, const int& countx, const int& county, const int& x_idx, const int& y_idx, const int& p_id){
+void handle_collision_grid(float *pos, const unsigned int* grid, const int& countx, const int& county, const int& x_idx, const int& y_idx, const int& p_id){
     for(int i= -NEIGHBOURHOOD_RADIUS; i<=NEIGHBOURHOOD_RADIUS; i++){
         for(int j= -NEIGHBOURHOOD_RADIUS; j<=NEIGHBOURHOOD_RADIUS; j++){
             const int idx_to_check = ((x_idx+i)+(y_idx+j)*countx)*(GRID_OVERLAP_TOLERANCE+1);
             const int& cell_count = grid[idx_to_check];
             if(cell_count==0) continue;
             for(int k=1; k<=cell_count; k++){
-                handle_collision(pos, pos_copy, p_id, grid[idx_to_check+k]);
+                handle_collision(pos, p_id, grid[idx_to_check+k]);
             }
             // const int p2 = grid[(x_idx+i) + (y_idx+j)*countx];
             // if((p2 != 0) && (p2 != p_id) ){
@@ -257,20 +266,77 @@ void grid_collision_solve(float *pos, const unsigned int* grid, const int& count
     #ifdef PERFORMANCE_DEBUG_MODE
     Timer timer("Collision solver");
     #endif
-    float pos_copy[2*p_count];
-    std::memcpy(pos_copy, pos, 2*particle_count*sizeof(float));
+    
     for(int i=0; i<p_count; i++){
         const int x_idx = floorf(pos[i * 2] / cell_dx);
         const int y_idx = floorf(pos[i * 2 + 1] / cell_dy);
-        handle_collision_grid(pos, pos_copy, grid, countx, county, x_idx, y_idx, i);
+        handle_collision_grid(pos, grid, countx, county, x_idx, y_idx, i);
     }
 }
+void handle_collision_grid_iterate_grid(float *pos, const unsigned int* grid, const int& countx, const int& county, const int& x_idx, const int& y_idx){
+    int ids_in_range[(1+2*NEIGHBOURHOOD_RADIUS)*(1+2*NEIGHBOURHOOD_RADIUS)*GRID_OVERLAP_TOLERANCE];
+    int particles_in_range = 0;
+    for(int i= -NEIGHBOURHOOD_RADIUS; i<=NEIGHBOURHOOD_RADIUS; i++){
+        for(int j= -NEIGHBOURHOOD_RADIUS; j<=NEIGHBOURHOOD_RADIUS; j++){
+            const int idx_to_check = ((x_idx+i)+(y_idx+j)*countx)*(GRID_OVERLAP_TOLERANCE+1);
+            const int& cell_count = grid[idx_to_check];
+            if(cell_count==0) continue;
+            for(int k=1; k<=cell_count; k++){
+                // handle_collision(pos, p_id, grid[idx_to_check+k]);
+                ids_in_range[particles_in_range] = grid[idx_to_check+k];
+                particles_in_range++;
+                
+            }
+        }
+    }
+    for(int i=0; i<particles_in_range; i++){
+        for(int j=i+1; j<particles_in_range; j++){
+            handle_collision(pos, ids_in_range[i], ids_in_range[j]);
+        }
+    }
+}
+
+void grid_collision_solve_iterate_grid(float *pos, const unsigned int* grid, const int& countx, const int& county, const int& p_count, const float& cell_dx, const float& cell_dy){
+    #ifdef PERFORMANCE_DEBUG_MODE
+    Timer timer("Collision solver");
+    #endif
+    
+    // for(int i=0; i<p_count; i++){
+    //     const int x_idx = floorf(pos[i * 2] / cell_dx);
+    //     const int y_idx = floorf(pos[i * 2 + 1] / cell_dy);
+    //     handle_collision_grid_iterate_grid(pos, grid, countx, county, x_idx, y_idx);
+    // }
+    for(int i=2*NEIGHBOURHOOD_RADIUS; i<countx - 2*NEIGHBOURHOOD_RADIUS; i++){
+        for(int j=2*NEIGHBOURHOOD_RADIUS; j<county - 2*NEIGHBOURHOOD_RADIUS; j++){
+            const int idx_to_check = ((i)+(j)*countx)*(GRID_OVERLAP_TOLERANCE+1);
+            if(grid[idx_to_check]==0) continue;
+            handle_collision_grid_iterate_grid(pos, grid, countx, county, i, j);
+        }
+    }
+}
+
+void thread_collision_solve_grid(float *pos, const unsigned int* grid, const int& countx, const int& county, const int& p_count, const float& cell_dx, const float& cell_dy, const int& threadIdx){
+    #ifdef PERFORMANCE_DEBUG_MODE
+    Timer timer("Collision solver");
+    #endif
+
+    for(int i=2*NEIGHBOURHOOD_RADIUS; i<countx - 2*NEIGHBOURHOOD_RADIUS; i++){
+        for(int j=2*NEIGHBOURHOOD_RADIUS; j<county - 2*NEIGHBOURHOOD_RADIUS; j++){
+            const int idx_to_check = ((i)+(j)*countx)*(GRID_OVERLAP_TOLERANCE+1);
+            if(grid[idx_to_check]==0) continue;
+            handle_collision_grid_iterate_grid(pos, grid, countx, county, i, j);
+        }
+    }
+}
+
+
+
 
 void n_square_collision_solve(float *pos, const int& p_count, const int& iterations){
     for(int iteration =0; iteration< iterations; iteration++){
         for(int i = 0; i<p_count-1; i++){
             for(int j=i; j<p_count; j++){
-                handle_collision(pos, pos, i, j);
+                handle_collision(pos, i, j);
             }
         }
     }
@@ -322,12 +388,15 @@ int main(int argc, char **argv)
 
     srand(40);
 
+    // float* ppos = new float[2 * particle_count];
+    // float* pcol = new float[particle_count];
+    // float* ppos_prev = new float[2*particle_count];
     float ppos[2 * particle_count];
     float pcol[particle_count];
     float ppos_prev[2*particle_count];
     initializeParticles(ppos, ppos_prev, pcol, particle_count, TIME_STEP);
     
-    sf::CircleShape pshapes[particle_count];
+    sf::CircleShape* pshapes = new sf::CircleShape[particle_count];
     for(int i=0; i<particle_count; i++){
         pshapes[i] = sf::CircleShape((float)(RADIUS*MAGNIFICATION));
         pshapes[i].setFillColor(hueToColor(pcol[i]));
@@ -336,7 +405,7 @@ int main(int argc, char **argv)
     // std::cout<<ppos[0]<<" "<<ppos[1]<<std::endl;
     // std::cout<<ppos[0]<<" "<<ppos[1]<<std::endl;
     
-    n_square_collision_solve(ppos, particle_count, 1);
+    // n_square_collision_solve(ppos, particle_count, 1);
     stepParticles(ppos, ppos_prev, particle_count, TIME_STEP);
     unsigned int spatial_grid[GRID_CELLS_COUNT_X * GRID_CELLS_COUNT_Y*(GRID_OVERLAP_TOLERANCE+1)];
     updateGrid(ppos, spatial_grid, particle_count, GRID_CELLS_COUNT_X, GRID_CELLS_COUNT_Y, GRID_CELL_DX, GRID_CELL_DY);
@@ -361,7 +430,7 @@ int main(int argc, char **argv)
         renderParticles(window, pshapes, ppos, particle_count);
         for(int i =0; i<ITERATIONS_PER_DRAW; i++){
         stepParticles(ppos, ppos_prev, particle_count, TIME_STEP);
-        for(int j = 0; j< GRID_CALCULATIONS_PER_ITER; j++){ grid_collision_solve(ppos, spatial_grid, GRID_CELLS_COUNT_X, GRID_CELLS_COUNT_Y, particle_count, GRID_CELL_DX, GRID_CELL_DY);
+        for(int j = 0; j< GRID_CALCULATIONS_PER_ITER; j++){ grid_collision_solve_iterate_grid(ppos, spatial_grid, GRID_CELLS_COUNT_X, GRID_CELLS_COUNT_Y, particle_count, GRID_CELL_DX, GRID_CELL_DY);
         updateGrid(ppos, spatial_grid, particle_count, GRID_CELLS_COUNT_X, GRID_CELLS_COUNT_Y, GRID_CELL_DX, GRID_CELL_DY);
         }
         }
