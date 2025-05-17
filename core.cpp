@@ -354,29 +354,28 @@ void solve_collision_threads_grid(float *pos, const unsigned int* grid, const in
     const int xidx = cell_padding;
     const int xidx2 = WORK_UNIT_CELLS_X - cell_padding;
 
+    const int final_yidx = (THREADS_Y-1)*WORK_UNIT_CELLS_Y;
 
-    thread_collision_solve_grid(pos, grid, countx, county, p_count, cell_dx, cell_dy, xidx, cell_padding, WORK_UNIT_CELLS_X, WORK_UNIT_CELLS_Y);
+    thread_collision_solve_grid(pos, grid, countx, county, p_count, cell_dx, cell_dy, xidx, cell_padding, gridx, WORK_UNIT_CELLS_Y);
         
         for(int j=1; j<THREADS_Y-1; j++){
             const int yidx = j*WORK_UNIT_CELLS_Y;
-            thread_collision_solve_grid(pos, grid, countx, county, p_count, cell_dx, cell_dy, xidx, yidx, WORK_UNIT_CELLS_X, WORK_UNIT_CELLS_Y);
+            thread_collision_solve_grid(pos, grid, countx, county, p_count, cell_dx, cell_dy, xidx, yidx, gridx, WORK_UNIT_CELLS_Y);
         }
         //j==THREADS_Y-1 case
-        const int final_yidx = (THREADS_Y-1)*WORK_UNIT_CELLS_Y;
-    thread_collision_solve_grid(pos, grid, countx, county, p_count, cell_dx, cell_dy, xidx, final_yidx, WORK_UNIT_CELLS_X, WORK_UNIT_CELLS_Y-cell_padding);
-
-
-
+    thread_collision_solve_grid(pos, grid, countx, county, p_count, cell_dx, cell_dy, xidx, final_yidx, gridx, WORK_UNIT_CELLS_Y-cell_padding);
     
-    thread_collision_solve_grid(pos, grid, countx, county, p_count, cell_dx, cell_dy, xidx2, cell_padding, WORK_UNIT_CELLS_X, WORK_UNIT_CELLS_Y);
+
+
+
+    thread_collision_solve_grid(pos, grid, countx, county, p_count, cell_dx, cell_dy, xidx2, cell_padding, gridx, WORK_UNIT_CELLS_Y);
         
     for(int j=1; j<THREADS_Y-1; j++){
         const int yidx = j*WORK_UNIT_CELLS_Y;
-        thread_collision_solve_grid(pos, grid, countx, county, p_count, cell_dx, cell_dy, xidx2, yidx, WORK_UNIT_CELLS_X, WORK_UNIT_CELLS_Y);
+        thread_collision_solve_grid(pos, grid, countx, county, p_count, cell_dx, cell_dy, xidx2, yidx, gridx, WORK_UNIT_CELLS_Y);
     }
     //j==THREADS_Y-1 case
-    const int final_yidx = (THREADS_Y-1)*WORK_UNIT_CELLS_Y;
-    thread_collision_solve_grid(pos, grid, countx, county, p_count, cell_dx, cell_dy, xidx2, final_yidx, WORK_UNIT_CELLS_X, WORK_UNIT_CELLS_Y-cell_padding);
+    thread_collision_solve_grid(pos, grid, countx, county, p_count, cell_dx, cell_dy, xidx2, final_yidx, gridx, WORK_UNIT_CELLS_Y-cell_padding);
 
 }
 
@@ -481,7 +480,7 @@ int main(int argc, char **argv)
         renderParticles(window, pshapes, ppos, particle_count);
         for(int i =0; i<ITERATIONS_PER_DRAW; i++){
         stepParticles(ppos, ppos_prev, particle_count, TIME_STEP);
-        for(int j = 0; j< GRID_CALCULATIONS_PER_ITER; j++){ grid_collision_solve_iterate_grid(ppos, spatial_grid, GRID_CELLS_COUNT_X, GRID_CELLS_COUNT_Y, particle_count, GRID_CELL_DX, GRID_CELL_DY);
+        for(int j = 0; j< GRID_CALCULATIONS_PER_ITER; j++){ solve_collision_threads_grid(ppos, spatial_grid, GRID_CELLS_COUNT_X, GRID_CELLS_COUNT_Y, particle_count, GRID_CELL_DX, GRID_CELL_DY);
         updateGrid(ppos, spatial_grid, particle_count, GRID_CELLS_COUNT_X, GRID_CELLS_COUNT_Y, GRID_CELL_DX, GRID_CELL_DY);
         }
         }
