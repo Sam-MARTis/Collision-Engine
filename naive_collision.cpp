@@ -26,14 +26,18 @@ const int GRID_CELLS_COUNT_Y = ceil(BOUNDARY_Y / RADIUS);
 const float GRID_CELL_DX = BOUNDARY_X / ((float)GRID_CELLS_COUNT_X);
 const float GRID_CELL_DY = BOUNDARY_Y / ((float)GRID_CELLS_COUNT_Y);
 
+float randf(){
+    return (float)rand()/RAND_MAX;
+}
+
 void initializeParticles(float *pos, float *vel, int count)
 {
     for (int i = 0; i < count; i++)
     {
-        pos[i * 2] = rand() * BOUNDARY_X;
-        pos[i * 2 + 1] = rand() * BOUNDARY_Y;
-        vel[i * 2] = STARTING_VELOCITY_RANGE * (rand() * 2 - 1);
-        vel[i * 2 + 1] = STARTING_VELOCITY_RANGE * (rand() * 2 - 1);
+        pos[i * 2] = randf() * BOUNDARY_X;
+        pos[i * 2 + 1] = randf() * BOUNDARY_Y;
+        vel[i * 2] = STARTING_VELOCITY_RANGE * (randf() * 2.0f - 1.0f);
+        vel[i * 2 + 1] = STARTING_VELOCITY_RANGE * (randf() * 2.0f - 1.0f);
     }
 }
 
@@ -122,17 +126,19 @@ int main(int argc, char **argv)
 
     srand(40);
 
-    float ppos[DIMENSIONS * particle_count];
-    float pvel[DIMENSIONS * particle_count];
+    float ppos[2 * particle_count];
+    float pvel[2 * particle_count];
     sf::CircleShape pshapes[particle_count];
     for(int i=0; i<particle_count; i++){
         pshapes[i] = sf::CircleShape((float)RADIUS);
     }
     
-
+    std::cout<<ppos[0]<<" "<<ppos[1]<<std::endl;
     initializeParticles(ppos, pvel, particle_count);
-    n_square_collision_solve(ppos, pvel, particle_count, 1);
-    stepParticles(ppos, pvel, particle_count, TIME_STEP);
+    std::cout<<ppos[0]<<" "<<ppos[1]<<std::endl;
+    
+    // n_square_collision_solve(ppos, pvel, particle_count, 1);
+    // stepParticles(ppos, pvel, particle_count, TIME_STEP);
 
 
     // unsigned int spatial_grid[GRID_CELLS_COUNT_X * GRID_CELLS_COUNT_Y];
@@ -145,33 +151,34 @@ int main(int argc, char **argv)
 
 
 
-    sf::ContextSettings settings;
-    settings.antialiasingLevel = 16;
-    sf::RenderWindow window(sf::VideoMode(1600, 1600), "First window", sf::Style::Default, settings);
-    window.setVerticalSyncEnabled(true);
+    // sf::ContextSettings settings;
+    // settings.antialiasingLevel = 16;
+    // sf::RenderWindow window(sf::VideoMode(1600, 1600), "First window", sf::Style::Default, settings);
+    // window.setVerticalSyncEnabled(true);
 
-    while (window.isOpen())
-    {
-        window.clear();
-        renderParticles(window, pshapes, ppos, particle_count);
-        stepParticles(ppos, pvel, particle_count, TIME_STEP);
-        n_square_collision_solve(ppos, pvel, particle_count, 1);
+    // while (window.isOpen())
+    // {
+    //     window.clear();
+    //     renderParticles(window, pshapes, ppos, particle_count);
+    //     // stepParticles(ppos, pvel, particle_count, TIME_STEP);
+    //     // n_square_collision_solve(ppos, pvel, particle_count, 1);
+    //     std::cout<<ppos[0]<<" "<<ppos[1];
 
 
         
         
-        window.display();
-        sf::Event event;
+    //     window.display();
+    //     sf::Event event;
 
 
-        while (window.pollEvent(event))
-        {
-            if (event.type == sf::Event::Closed)
-            { 
-                window.close();
-            }
-        }
-    }
+    //     while (window.pollEvent(event))
+    //     {
+    //         if (event.type == sf::Event::Closed)
+    //         { 
+    //             window.close();
+    //         }
+    //     }
+    // }
     
     
 

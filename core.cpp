@@ -26,14 +26,18 @@ const int GRID_CELLS_COUNT_Y = ceil(BOUNDARY_Y / RADIUS);
 const float GRID_CELL_DX = BOUNDARY_X / ((float)GRID_CELLS_COUNT_X);
 const float GRID_CELL_DY = BOUNDARY_Y / ((float)GRID_CELLS_COUNT_Y);
 
+float randf(){
+    return (float)rand()/RAND_MAX;
+}
+
 void initializeParticles(float *pos, float *vel, int count)
 {
     for (int i = 0; i < count; i++)
     {
-        pos[i * 2] = rand() * BOUNDARY_X;
-        pos[i * 2 + 1] = rand() * BOUNDARY_Y;
-        vel[i * 2] = STARTING_VELOCITY_RANGE * (rand() * 2 - 1);
-        vel[i * 2 + 1] = STARTING_VELOCITY_RANGE * (rand() * 2 - 1);
+        pos[i * 2] = randf() * BOUNDARY_X;
+        pos[i * 2 + 1] = randf() * BOUNDARY_Y;
+        vel[i * 2] = STARTING_VELOCITY_RANGE * (randf() * 2.0f - 1.0f);
+        vel[i * 2 + 1] = STARTING_VELOCITY_RANGE * (randf() * 2.0f - 1.0f);
     }
 }
 
