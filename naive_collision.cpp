@@ -5,22 +5,23 @@
 #include <cstdlib>
 #include <cstring>
 
-#define DEFAULT_PARTICLE_COUNT 1000
+#define DEFAULT_PARTICLE_COUNT 500
 #define DIMENSIONS 2
 #define INTERNAL_DAMPING 1.0f
-#define RADIUS 5
-#define RADIUS_SQUARED_TIMES_FOUR 100
+#define RADIUS 2
+#define RADIUS_SQUARED_TIMES_FOUR 4*RADIUS*RADIUS
 #define STARTING_VELOCITY_RANGE 10
 #define GRID_OVERLAP_TOLERANCE 5
 #define BOUNDARY_X 800.0f
 #define BOUNDARY_Y 800.0f
-#define TIME_STEP 0.0001f
+#define TIME_STEP 0.01f
+#define ITERATIONS_PER_DRAW 1
 
 
 #define DEBUG_MODE true
 
 unsigned int particle_count;
-const float G = -9.81;
+const float G = 19.81;
 const int GRID_CELLS_COUNT_X = ceil(BOUNDARY_X / RADIUS);
 const int GRID_CELLS_COUNT_Y = ceil(BOUNDARY_Y / RADIUS);
 const float GRID_CELL_DX = BOUNDARY_X / ((float)GRID_CELLS_COUNT_X);
@@ -49,12 +50,32 @@ void stepParticles(float *pos, float *vel, const int& count, const float& dt)
         pos[i * 2 + 1] += 0.5 * vel[i * 2 + 1] * dt;
         vel[i * 2 + 1] += G * dt;
         pos[i * 2 + 1] += 0.5 * vel[i * 2 + 1] * dt;
+        if(pos[i*2+1]>BOUNDARY_Y-2*RADIUS){
+            vel[i*2+1] *= -1;
+            pos[i*2+1] = BOUNDARY_Y-2*RADIUS;
+        }
+        if(pos[i*2+1]<RADIUS){
+            vel[i*2+1] *= -1;
+            pos[i*2+1] = RADIUS;
+        }
+
+        if((pos[i*2]>BOUNDARY_X-2*RADIUS)){
+            vel[i*2] *= -1;
+            pos[i*2] = BOUNDARY_X-2*RADIUS;
+
+        } 
+        if(pos[i*2]< RADIUS){
+            pos[i*2] = RADIUS;
+            vel[i*2] *= -1;
+        }
+        
     }
+
 }
 
 void handle_collision(float *pos, float *vel, const int& id1, const int& id2){
-    const int p1 = (id1-1)*2;
-    const int p2 = (id2-1)*2;
+    const int p1 = (id1)*2;
+    const int p2 = (id2)*2;
     const float dx = pos[p2] - pos[p1];
     const float dy = pos[p2+1] - pos[p1+1];
     const float distance_squared = pow(dx, 2) + pow(dy, 2);
@@ -68,22 +89,22 @@ void handle_collision(float *pos, float *vel, const int& id1, const int& id2){
     const float dot_product = nx* (vel[p1] - vel[p2]) + ny*(vel[p1+1] - vel[p2+1]);
     const float x_push = dot_product * nx *INTERNAL_DAMPING;
     const float y_push =  dot_product * ny *INTERNAL_DAMPING;
-    const float dR = (float)RADIUS-distance;
+    const float dR = 2.0f * RADIUS - distance + 1e-4f;
     vel[p1] -= x_push;
     vel[p1+1] -= y_push;
     vel[p2] += x_push;
     vel[p2+1] += y_push;
-    pos[p1] -= (nx * dR);
-    pos[p1+1] -= (ny * dR);
-    pos[p2] += (nx * dR);
-    pos[p2+1] += (ny * dR);
+    pos[p1] -= (nx * dR/2.0f);
+    pos[p1+1] -= (ny * dR/2.0f);
+    pos[p2] += (nx * dR/2.0f);
+    pos[p2+1] += (ny * dR/2.0f);
 }
 
 void n_square_collision_solve(float *pos, float *vel, const int& p_count, const int& iterations){
     for(int iteration =0; iteration< iterations; iteration++){
         for(int i = 0; i<p_count-1; i++){
-            for(int j=0; j<p_count; j++){
-                handle_collision(pos, vel, i+1, j+1);
+            for(int j=i; j<p_count; j++){
+                handle_collision(pos, vel, i, j);
             }
         }
     }
@@ -133,12 +154,12 @@ int main(int argc, char **argv)
         pshapes[i] = sf::CircleShape((float)RADIUS);
     }
     
-    std::cout<<ppos[0]<<" "<<ppos[1]<<std::endl;
+    // std::cout<<ppos[0]<<" "<<ppos[1]<<std::endl;
     initializeParticles(ppos, pvel, particle_count);
-    std::cout<<ppos[0]<<" "<<ppos[1]<<std::endl;
+    // std::cout<<ppos[0]<<" "<<ppos[1]<<std::endl;
     
-    // n_square_collision_solve(ppos, pvel, particle_count, 1);
-    // stepParticles(ppos, pvel, particle_count, TIME_STEP);
+    n_square_collision_solve(ppos, pvel, particle_count, 1);
+    stepParticles(ppos, pvel, particle_count, TIME_STEP);
 
 
     // unsigned int spatial_grid[GRID_CELLS_COUNT_X * GRID_CELLS_COUNT_Y];
@@ -151,34 +172,36 @@ int main(int argc, char **argv)
 
 
 
-    // sf::ContextSettings settings;
-    // settings.antialiasingLevel = 16;
-    // sf::RenderWindow window(sf::VideoMode(1600, 1600), "First window", sf::Style::Default, settings);
-    // window.setVerticalSyncEnabled(true);
+    sf::ContextSettings settings;
+    settings.antialiasingLevel = 16;
+    sf::RenderWindow window(sf::VideoMode((int)round(BOUNDARY_X), (int)round(BOUNDARY_Y)), "First window", sf::Style::Default, settings);
+    window.setVerticalSyncEnabled(true);
 
-    // while (window.isOpen())
-    // {
-    //     window.clear();
-    //     renderParticles(window, pshapes, ppos, particle_count);
-    //     // stepParticles(ppos, pvel, particle_count, TIME_STEP);
-    //     // n_square_collision_solve(ppos, pvel, particle_count, 1);
-    //     std::cout<<ppos[0]<<" "<<ppos[1];
+    while (window.isOpen())
+    {
+        window.clear();
+        renderParticles(window, pshapes, ppos, particle_count);
+        for(int i =0; i<ITERATIONS_PER_DRAW; i++){
+        stepParticles(ppos, pvel, particle_count, TIME_STEP);
+        n_square_collision_solve(ppos, pvel, particle_count, 1);
+        }
+        // std::cout<<ppos[0]<<" "<<ppos[1];
 
 
         
         
-    //     window.display();
-    //     sf::Event event;
+        window.display();
+        sf::Event event;
 
 
-    //     while (window.pollEvent(event))
-    //     {
-    //         if (event.type == sf::Event::Closed)
-    //         { 
-    //             window.close();
-    //         }
-    //     }
-    // }
+        while (window.pollEvent(event))
+        {
+            if (event.type == sf::Event::Closed)
+            { 
+                window.close();
+            }
+        }
+    }
     
     
 
