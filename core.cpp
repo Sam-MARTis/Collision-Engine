@@ -5,16 +5,18 @@
 #include <cstdlib>
 #include <cstring>
 
-#define DEFAULT_PARTICLE_COUNT 1000
+#define DEFAULT_PARTICLE_COUNT 100
 #define DIMENSIONS 2
 #define INTERNAL_DAMPING 1.0f
 #define RADIUS 5
 #define RADIUS_SQUARED_TIMES_FOUR 100
 #define STARTING_VELOCITY_RANGE 10
 #define GRID_OVERLAP_TOLERANCE 5
+#define NEIGHBOURHOOD_RADIUS 1
 #define BOUNDARY_X 800.0f
 #define BOUNDARY_Y 800.0f
 #define TIME_STEP 0.0001f
+
 
 
 #define DEBUG_MODE true
@@ -30,7 +32,7 @@ float randf(){
     return (float)rand()/RAND_MAX;
 }
 
-void initializeParticles(float *pos, float *vel, int count)
+void initializeParticles(float *pos, float *vel, const int& count)
 {
     for (int i = 0; i < count; i++)
     {
@@ -41,48 +43,95 @@ void initializeParticles(float *pos, float *vel, int count)
     }
 }
 
-void stepParticles(float *pos, float *vel, int count)
+
+void stepParticles(float *pos, float *vel, const int& count, const float& dt)
 {
     for (int i = 0; i < count; i++)
     {
-        pos[i * 2] += vel[i * 2] * TIME_STEP;
-        pos[i * 2 + 1] += 0.5 * vel[i * 2 + 1] * TIME_STEP;
-        vel[i * 2 + 1] += G * TIME_STEP;
-        pos[i * 2 + 1] += 0.5 * vel[i * 2 + 1] * TIME_STEP;
-    }
-}
+        pos[i * 2] += vel[i * 2] * dt;
+        pos[i * 2 + 1] += 0.5 * vel[i * 2 + 1] * dt;
+        vel[i * 2 + 1] += G * dt;
+        pos[i * 2 + 1] += 0.5 * vel[i * 2 + 1] * dt;
+        if(pos[i*2+1]>BOUNDARY_Y-2*RADIUS){
+            vel[i*2+1] *= -1;
+            pos[i*2+1] = BOUNDARY_Y-2*RADIUS;
+        }
+        if(pos[i*2+1]<RADIUS){
+            vel[i*2+1] *= -1;
+            pos[i*2+1] = RADIUS;
+        }
 
-void updateGrid(float *pos, unsigned int *grid, int p_count, const int countx, const int county, const float cell_dx, const float cell_dy)
+        if((pos[i*2]>BOUNDARY_X-2*RADIUS)){
+            vel[i*2] *= -1;
+            pos[i*2] = BOUNDARY_X-2*RADIUS;
+
+        } 
+        if(pos[i*2]< RADIUS){
+            pos[i*2] = RADIUS;
+            vel[i*2] *= -1;
+        }
+        
+    }
+
+}
+void updateGrid(const float *pos, unsigned int *grid, const int& p_count, const int& countx, const int& county, const float& cell_dx, const float& cell_dy)
 {
-    memset(grid, 0, sizeof(float) * countx * county);
+    memset(grid, 0, sizeof(float) * countx * county*(GRID_OVERLAP_TOLERANCE+1));
 
     #ifdef DEBUG_MODE
         for (int i = 0; i < p_count; i++)
         {
             const int x_idx = floorf(pos[i * 2] / cell_dx);
             const int y_idx = floorf(pos[i * 2 + 1] / cell_dy);
-            if(grid[x_idx+y_idx*countx] != 0){
-                fprintf(stderr, "Error. Grid collision detected at index (x: %d, y: %d)", x_idx, y_idx );
+            const int idx = (x_idx + y_idx*countx)*(GRID_OVERLAP_TOLERANCE+1);
+            unsigned int& cells_occupied = grid[idx];
+            if(cells_occupied==GRID_OVERLAP_TOLERANCE){
+                fprintf(stderr, "Error. Grid Tolerance exceeded at index (x: %d, y: %d)", x_idx, y_idx );
                 exit(1);
             }
-            grid[x_idx + y_idx * countx] = i + 1;
+
+
+            // if(grid[x_idx+y_idx*countx] != 0){
+            //     fprintf(stderr, "Error. Grid collision detected at index (x: %d, y: %d)", x_idx, y_idx );
+            //     exit(1);
+            // }
+
+
+            cells_occupied ++;
+            grid[idx + cells_occupied] = i;
+            // grid[x_idx + y_idx * countx] = i + 1;
         }
     
     #else
-    {
         for (int i = 0; i < p_count; i++)
         {
             const int x_idx = floorf(pos[i * 2] / cell_dx);
             const int y_idx = floorf(pos[i * 2 + 1] / cell_dy);
-            grid[x_idx + y_idx * countx] = i + 1;
+            const int idx = (x_idx + y_idx*countx)*(GRID_OVERLAP_TOLERANCE+1);
+            unsigned int& cells_occupied = grid[idx];
+            // if(cells_occupied==GRID_OVERLAP_TOLERANCE){
+            //     fprintf(stderr, "Error. Grid Tolerance exceeded at index (x: %d, y: %d)", x_idx, y_idx );
+            //     exit(1);
+            // }
+
+
+            // if(grid[x_idx+y_idx*countx] != 0){
+            //     fprintf(stderr, "Error. Grid collision detected at index (x: %d, y: %d)", x_idx, y_idx );
+            //     exit(1);
+            // }
+
+
+            cells_occupied ++;
+            grid[idx + cells_occupied] = i+1;
+            // grid[x_idx + y_idx * countx] = i + 1;
         }
-    }
     #endif
 }
 
-void handle_collision(float *pos, float *vel, int id1, int id2){
-    const int p1 = (id1-1)*2;
-    const int p2 = (id2-1)*2;
+void handle_collision(float *pos, float *vel, const int& id1, const int& id2){
+    if(id1==id2) return;
+    const int p1 = (id1)*2;
+    const int p2 = (id2)*2;
     const float dx = pos[p2] - pos[p1];
     const float dy = pos[p2+1] - pos[p1+1];
     const float distance_squared = pow(dx, 2) + pow(dy, 2);
@@ -96,7 +145,7 @@ void handle_collision(float *pos, float *vel, int id1, int id2){
     const float dot_product = nx* (vel[p1] - vel[p2]) + ny*(vel[p1+1] - vel[p2+1]);
     const float x_push = dot_product * nx *INTERNAL_DAMPING;
     const float y_push =  dot_product * ny *INTERNAL_DAMPING;
-    const float dR = (float)RADIUS-distance;
+    const float dR = RADIUS - 0.5f*distance;
     vel[p1] -= x_push;
     vel[p1+1] -= y_push;
     vel[p2] += x_push;
@@ -107,36 +156,49 @@ void handle_collision(float *pos, float *vel, int id1, int id2){
     pos[p2+1] += (ny * dR);
 }
 
-void n_square_collision_solve(float *pos, float *vel, int p_count, int iterations){
+void n_square_collision_solve(float *pos, float *vel, const int& p_count, const int& iterations){
     for(int iteration =0; iteration< iterations; iteration++){
         for(int i = 0; i<p_count-1; i++){
-            for(int j=0; j<p_count; j++){
-                handle_collision(pos, vel, i+1, j+1);
+            for(int j=i; j<p_count; j++){
+                handle_collision(pos, vel, i, j);
             }
         }
     }
 }
-void handle_collision_grid(float *pos, float* vel, unsigned int* grid, int countx, int county, int x_idx, int y_idx, int p_id){
-    for(int i=-1; i<=1; i++){
-        for(int j=-1; j<=1; j++){
-            const int p2 = grid[(x_idx+i) + (y_idx+j)*countx];
-            if((p2 != 0) && (p2 != p_id) ){
-                handle_collision(pos, vel, p_id, p2);
+void handle_collision_grid(float *pos, float* vel, const unsigned int* grid, const int& countx, const int& county, const int& x_idx, const int& y_idx, const int& p_id){
+    for(int i= -NEIGHBOURHOOD_RADIUS; i<=NEIGHBOURHOOD_RADIUS; i++){
+        for(int j= -NEIGHBOURHOOD_RADIUS; j<=NEIGHBOURHOOD_RADIUS; j++){
+            const int idx_to_check = ((x_idx+i)+(y_idx+j)*countx)*(GRID_OVERLAP_TOLERANCE+1);
+            const int& cell_count = grid[idx_to_check];
+            if(cell_count==0) continue;
+            for(int k=1; k<=cell_count; k++){
+                handle_collision(pos, vel, p_id, grid[idx_to_check+k]);
             }
+            // const int p2 = grid[(x_idx+i) + (y_idx+j)*countx];
+            // if((p2 != 0) && (p2 != p_id) ){
+            //     handle_collision(pos, vel, p_id, p2);
+            // }
         }
     }
 }
 
 
-void grid_collision_solve(float *pos, float* vel, unsigned int* grid, int countx, int county, int p_count, float cell_dx, float cell_dy){
+void grid_collision_solve(float *pos, float* vel, const unsigned int* grid, const int& countx, const int& county, const int& p_count, const float& cell_dx, const float& cell_dy){
 
     for(int i=0; i<p_count; i++){
         const int x_idx = floorf(pos[i * 2] / cell_dx);
         const int y_idx = floorf(pos[i * 2 + 1] / cell_dy);
-        handle_collision_grid(pos, vel, grid, countx, county, x_idx, y_idx, i+1);
+        handle_collision_grid(pos, vel, grid, countx, county, x_idx, y_idx, i);
     }
 }
 
+void renderParticles(sf::RenderWindow& window, sf::CircleShape *points,  const float* pos, const int& particle_count){
+    for(int i=0; i<particle_count; i++){
+        points[i].setPosition(pos[2*i], pos[2*i +1]);
+        window.draw(points[i]);
+    }
+
+}
 
 
 int main(int argc, char **argv)
@@ -162,8 +224,14 @@ int main(int argc, char **argv)
 
     float ppos[DIMENSIONS * particle_count];
     float pvel[DIMENSIONS * particle_count];
+    
+    sf::CircleShape pshapes[particle_count];
+    for(int i=0; i<particle_count; i++){
+        pshapes[i] = sf::CircleShape((float)RADIUS);
+    }
     initializeParticles(ppos, pvel, particle_count);
-    unsigned int spatial_grid[GRID_CELLS_COUNT_X * GRID_CELLS_COUNT_Y];
+    unsigned int spatial_grid[GRID_CELLS_COUNT_X * GRID_CELLS_COUNT_Y*(GRID_OVERLAP_TOLERANCE+1)];
+
     /* REMEMBER: Fix collisions BEFORE putting stuff into grid. Wait wtf.
     Ok so... the FIRST time you initialize particles, you have to inefficiently sort collisions.
     Why? Because theres a chance of strong overlap in the beggining. 
