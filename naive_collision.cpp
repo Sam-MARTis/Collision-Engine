@@ -89,15 +89,15 @@ void handle_collision(float *pos, float *vel, const int& id1, const int& id2){
     const float dot_product = nx* (vel[p1] - vel[p2]) + ny*(vel[p1+1] - vel[p2+1]);
     const float x_push = dot_product * nx *INTERNAL_DAMPING;
     const float y_push =  dot_product * ny *INTERNAL_DAMPING;
-    const float dR = 2.0f * RADIUS - distance + 1e-4f;
+    const float dR = RADIUS - 0.5f*distance;
     vel[p1] -= x_push;
     vel[p1+1] -= y_push;
     vel[p2] += x_push;
     vel[p2+1] += y_push;
-    pos[p1] -= (nx * dR/2.0f);
-    pos[p1+1] -= (ny * dR/2.0f);
-    pos[p2] += (nx * dR/2.0f);
-    pos[p2+1] += (ny * dR/2.0f);
+    pos[p1] -= (nx * dR);
+    pos[p1+1] -= (ny * dR);
+    pos[p2] += (nx * dR);
+    pos[p2+1] += (ny * dR);
 }
 
 void n_square_collision_solve(float *pos, float *vel, const int& p_count, const int& iterations){
