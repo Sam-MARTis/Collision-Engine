@@ -23,12 +23,14 @@
 #define CACHE_FILE "colours_cache.txt"
 
 
-#define BOUNDARY_X 500.0f
-#define BOUNDARY_Y 800.0f
+#define BOUNDARY_X 550.0f
+#define BOUNDARY_Y 550.0f
 #define PADDING 50.0f
 #define TIME_STEP 0.015f
 #define ITERATIONS_PER_DRAW 2
 #define GRID_CALCULATIONS_PER_ITER 1
+
+#define MAGNIFICATION 1.5f
 
 
 
@@ -236,12 +238,12 @@ void n_square_collision_solve(float *pos, const int& p_count, const int& iterati
 }
 void renderParticles(sf::RenderWindow& window, sf::CircleShape *points,  const float* pos, const int& particle_count){
     for(int i=0; i<particle_count; i++){
-        points[i].setPosition(pos[2*i], pos[2*i +1]);
+        points[i].setPosition(pos[2*i]*MAGNIFICATION, pos[2*i +1]*MAGNIFICATION);
         window.draw(points[i]);
     }
 
 }
-void tagParticles(const sf::Vector2i& mouse_coordinates, float* col, sf::CircleShape *points,  const unsigned int* grid, const int& countx, const int& county, const float& cell_dx, const float& cell_dy){
+void tagParticles(const sf::Vector2f& mouse_coordinates, float* col, sf::CircleShape *points,  const unsigned int* grid, const int& countx, const int& county, const float& cell_dx, const float& cell_dy){
     const float mouseX = (float)mouse_coordinates.x;
     const float mouseY = (float)mouse_coordinates.y;
     const int x_idx = floorf(mouseX/ cell_dx);
@@ -288,7 +290,7 @@ int main(int argc, char **argv)
     
     sf::CircleShape pshapes[particle_count];
     for(int i=0; i<particle_count; i++){
-        pshapes[i] = sf::CircleShape((float)RADIUS);
+        pshapes[i] = sf::CircleShape((float)(RADIUS*MAGNIFICATION));
         pshapes[i].setFillColor(hueToColor(pcol[i]));
     }
     
@@ -309,7 +311,7 @@ int main(int argc, char **argv)
 
     sf::ContextSettings settings;
     settings.antialiasingLevel = 16;
-    sf::RenderWindow window(sf::VideoMode((int)round(BOUNDARY_X), (int)round(BOUNDARY_Y)), "First window", sf::Style::Default, settings);
+    sf::RenderWindow window(sf::VideoMode((int)round(BOUNDARY_X*MAGNIFICATION), (int)round(BOUNDARY_Y*MAGNIFICATION)), "First window", sf::Style::Default, settings);
     window.setVerticalSyncEnabled(true);
     
     bool dragging = false;
@@ -343,7 +345,9 @@ int main(int argc, char **argv)
 
             if(dragging){
                 // std::cout<<"Dragging now"<<std::endl;
-                sf::Vector2i mouseCoords = sf::Mouse::getPosition(window);
+                sf::Vector2f mouseCoords = window.mapPixelToCoords(sf::Mouse::getPosition(window));
+                mouseCoords.x *= 1.0f/MAGNIFICATION;
+                mouseCoords.y *= 1.0f/MAGNIFICATION;
                 tagParticles(mouseCoords, pcol, pshapes, spatial_grid,GRID_CELLS_COUNT_X, GRID_CELLS_COUNT_Y, GRID_CELL_DX, GRID_CELL_DY);
             }
             
