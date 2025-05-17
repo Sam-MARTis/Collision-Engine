@@ -4,6 +4,7 @@
 #include <math.h>
 #include <cstdlib>
 #include <cstring>
+#include <fstream>
 
 #define DEFAULT_PARTICLE_COUNT 10000
 #define DIMENSIONS 2
@@ -15,7 +16,14 @@
 #define GRID_OVERLAP_TOLERANCE 2
 #define NEIGHBOURHOOD_RADIUS 1
 
-#define BOUNDARY_X 1400.0f
+#define TAGGING_RADIUS 1
+#define TAG_COLOUR 200.0f
+// #define CACHE_COLOURS
+#define READ_CACHE_COLOURS
+#define CACHE_FILE "colours_cache.txt"
+
+
+#define BOUNDARY_X 500.0f
 #define BOUNDARY_Y 800.0f
 #define PADDING 50.0f
 #define TIME_STEP 0.015f
@@ -39,8 +47,36 @@ const float GRID_CELL_DY = BOUNDARY_Y / ((float)GRID_CELLS_COUNT_Y);
 float randf(){
     return (float)rand()/RAND_MAX;
 }
+sf::Color hueToColor(float hueDegrees) {
+    float h = fmod(hueDegrees, 360.0f);
+    float s = 1.0f; 
+    float l = 0.5f; 
 
-void initializeParticles(float *pos, float *init_pos, const int& count, const float& dt)
+    float c = (1 - std::fabs(2 * l - 1)) * s;
+    float x = c * (1 - std::fabs(fmod(h / 60.0f, 2) - 1));
+    float m = l - c / 2.0f;
+
+    float r = 0, g = 0, b = 0;
+
+    if (0 <= h && h < 60)      { r = c; g = x; b = 0; }
+    else if (60 <= h && h < 120)  { r = x; g = c; b = 0; }
+    else if (120 <= h && h < 180) { r = 0; g = c; b = x; }
+    else if (180 <= h && h < 240) { r = 0; g = x; b = c; }
+    else if (240 <= h && h < 300) { r = x; g = 0; b = c; }
+    else if (300 <= h && h < 360) { r = c; g = 0; b = x; }
+
+    return sf::Color(
+        static_cast<sf::Uint8>((r + m) * 255),
+        static_cast<sf::Uint8>((g + m) * 255),
+        static_cast<sf::Uint8>((b + m) * 255)
+    );
+}
+
+
+
+
+
+void initializeParticles(float *pos, float *init_pos, float *col, const int& count, const float& dt)
 {
     for (int i = 0; i < count; i++)
     {
@@ -48,10 +84,27 @@ void initializeParticles(float *pos, float *init_pos, const int& count, const fl
         init_pos[i * 2 + 1] = PADDING + randf() * (BOUNDARY_Y - 2*PADDING);
         pos[i * 2] = init_pos[i*2] + STARTING_VELOCITY_RANGE * (randf() * 2.0f - 1.0f)*dt;
         pos[i * 2 + 1] = init_pos[i*2+1]+ STARTING_VELOCITY_RANGE * (randf() * 2.0f - 1.0f)*dt + 0.5*G*dt*dt;
+        col[i] = 120.0f;
     }
+
+    #ifdef READ_CACHE_COLOURS
+        std::ifstream fin(CACHE_FILE);
+        int cached_particles;
+        fin>>cached_particles;
+        const int reads = cached_particles<count? cached_particles : count;
+        for(int i=0; i<reads; i++){
+            fin >> col[i];
+        }
+    #endif
 }
 
-
+void cacheColours(float* col, const int& particle_count, const std::string& filename){
+    std::ofstream fout(filename);
+    fout<<particle_count<<"\n";
+    for (int i=0; i<particle_count; i++){
+        fout<<col[i]<<"\n";
+    }
+}
 void stepParticles(float *pos, float *prev_pos, const int& count, const float& dt)
 {
     for (int i = 0; i < count; i++)
@@ -188,7 +241,24 @@ void renderParticles(sf::RenderWindow& window, sf::CircleShape *points,  const f
     }
 
 }
+void tagParticles(const sf::Vector2i& mouse_coordinates, float* col, sf::CircleShape *points,  const unsigned int* grid, const int& countx, const int& county, const float& cell_dx, const float& cell_dy){
+    const float mouseX = (float)mouse_coordinates.x;
+    const float mouseY = (float)mouse_coordinates.y;
+    const int x_idx = floorf(mouseX/ cell_dx);
+    const int y_idx = floorf(mouseY / cell_dy);
+    for(int l= -TAGGING_RADIUS; l<=TAGGING_RADIUS; l++){
+            for(int m = -TAGGING_RADIUS; m<= TAGGING_RADIUS; m++){
+            const int idx = ((x_idx+l) + (y_idx+m)*countx )*(GRID_OVERLAP_TOLERANCE + 1);
+            if(grid[idx]==0) continue;;
+            for(int i=1; i<=grid[idx]; i++){
+                const int id = grid[idx+i];
+                col[id]=TAG_COLOUR;
+                points[id].setFillColor(hueToColor(TAG_COLOUR));
+            }
+        }
+    }
 
+}
 
 int main(int argc, char **argv)
 {
@@ -212,16 +282,17 @@ int main(int argc, char **argv)
     srand(40);
 
     float ppos[2 * particle_count];
+    float pcol[particle_count];
     float ppos_prev[2*particle_count];
-    float pvel[2 * particle_count];
+    initializeParticles(ppos, ppos_prev, pcol, particle_count, TIME_STEP);
     
     sf::CircleShape pshapes[particle_count];
     for(int i=0; i<particle_count; i++){
         pshapes[i] = sf::CircleShape((float)RADIUS);
+        pshapes[i].setFillColor(hueToColor(pcol[i]));
     }
     
     // std::cout<<ppos[0]<<" "<<ppos[1]<<std::endl;
-    initializeParticles(ppos, ppos_prev, particle_count, TIME_STEP);
     // std::cout<<ppos[0]<<" "<<ppos[1]<<std::endl;
     
     n_square_collision_solve(ppos, particle_count, 1);
@@ -240,7 +311,9 @@ int main(int argc, char **argv)
     settings.antialiasingLevel = 16;
     sf::RenderWindow window(sf::VideoMode((int)round(BOUNDARY_X), (int)round(BOUNDARY_Y)), "First window", sf::Style::Default, settings);
     window.setVerticalSyncEnabled(true);
-
+    
+    bool dragging = false;
+    std::vector<int> selected_particles;
     while (window.isOpen())
     {
         window.clear();
@@ -248,24 +321,38 @@ int main(int argc, char **argv)
         for(int i =0; i<ITERATIONS_PER_DRAW; i++){
         stepParticles(ppos, ppos_prev, particle_count, TIME_STEP);
         for(int j = 0; j< GRID_CALCULATIONS_PER_ITER; j++){ grid_collision_solve(ppos, spatial_grid, GRID_CELLS_COUNT_X, GRID_CELLS_COUNT_Y, particle_count, GRID_CELL_DX, GRID_CELL_DY);
-        // std::cout<<"Preparing to update grid";
         updateGrid(ppos, spatial_grid, particle_count, GRID_CELLS_COUNT_X, GRID_CELLS_COUNT_Y, GRID_CELL_DX, GRID_CELL_DY);
         }
-        // std::cout<<"Updated grid";
         }
-        // std::cout<<ppos[0]<<" "<<ppos[1];
 
 
         
         
         window.display();
         sf::Event event;
+        
 
 
         while (window.pollEvent(event))
         {
+            if((event.type ==sf::Event::MouseButtonPressed) &&
+            (event.mouseButton.button == sf::Mouse::Left)) dragging=true;
+            if((event.type == sf::Event::MouseButtonReleased) &&
+            (event.mouseButton.button == sf::Mouse::Left)) dragging=false;
+
+
+            if(dragging){
+                // std::cout<<"Dragging now"<<std::endl;
+                sf::Vector2i mouseCoords = sf::Mouse::getPosition(window);
+                tagParticles(mouseCoords, pcol, pshapes, spatial_grid,GRID_CELLS_COUNT_X, GRID_CELLS_COUNT_Y, GRID_CELL_DX, GRID_CELL_DY);
+            }
+            
+            
             if (event.type == sf::Event::Closed)
             { 
+                #ifdef CACHE_COLOURS
+                    cacheColours(pcol, particle_count, CACHE_FILE);
+                #endif
                 window.close();
             }
         }
