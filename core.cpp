@@ -8,7 +8,7 @@
 #include <chrono>
 #include <thread>
 
-#define DEFAULT_PARTICLE_COUNT 5000
+#define DEFAULT_PARTICLE_COUNT 80000
 #define DIMENSIONS 2
 #define INTERNAL_DAMPING 0.0f
 #define WALL_DAMPING 0.1f
@@ -28,16 +28,16 @@
 #define BOUNDARY_Y 400.0f
 #define PADDING 10 * NEIGHBOURHOOD_RADIUS
 #define TIME_STEP 0.005f
-#define ITERATIONS_PER_DRAW 10
+#define ITERATIONS_PER_DRAW 2
 #define GRID_CALCULATIONS_PER_ITER 3
 
 #define MAGNIFICATION 1.5f
 
-#define THREADS_X 1
-#define THREADS_Y 1
+#define THREADS_X 6
+#define THREADS_Y 5
 
 // #define DEBUG_MODE true
-// #define PERFORMANCE_DEBUG_MODE
+#define PERFORMANCE_DEBUG_MODE
 
 /*
 step took: 0.063394ms
@@ -290,9 +290,9 @@ void handle_collision_grid(float *pos, const unsigned int *grid, const int &coun
 
 void grid_collision_solve(float *pos, const unsigned int *grid, const int &countx, const int &county, const int &p_count, const float &cell_dx, const float &cell_dy)
 {
-#ifdef PERFORMANCE_DEBUG_MODE
-    Timer timer("Collision solver");
-#endif
+// #ifdef PERFORMANCE_DEBUG_MODE
+//     Timer timer("Collision solver");
+// #endif
 
     for (int i = 0; i < p_count; i++)
     {
@@ -370,9 +370,7 @@ void grid_collision_solve_iterate_grid(float *pos, const unsigned int *grid, con
 void thread_collision_solve_grid(float *pos, const unsigned int *grid, const int &countx, const int &county, const int &p_count, const float &cell_dx, const float &cell_dy, const int &thread_start_X, const int &thread_start_Y, const int &gridx, const int &gridy)
 {
 // he master thread dispatcher calls this function with proper arguements
-#ifdef PERFORMANCE_DEBUG_MODE
-    Timer timer("Collision solver");
-#endif
+
 
     for (int i = thread_start_X; i < thread_start_X + gridx; i++)
     {
@@ -388,6 +386,9 @@ void thread_collision_solve_grid(float *pos, const unsigned int *grid, const int
 
 void solve_collision_threads_grid(float *pos, const unsigned int *grid, const int &countx, const int &county, const int &p_count, const float &cell_dx, const float &cell_dy)
 {
+    #ifdef PERFORMANCE_DEBUG_MODE
+    Timer timer("Collision solver");
+#endif
     // Master dispatcher. Is reponsible for calling the threads after assigning them the proper domains to work on. race conditions allowed for now.
     std::thread Threads_Mine[THREADS_X*THREADS_Y];
     const int thread_grid_padding = 3 * NEIGHBOURHOOD_RADIUS;
@@ -421,9 +422,9 @@ void solve_collision_threads_grid(float *pos, const unsigned int *grid, const in
             Threads_Mine[i + j*THREADS_X] = std::thread(thread_collision_solve_grid, pos, grid, countx, county, p_count, cell_dx, cell_dy, xidx, yidx, gridx, gridy);
         }
     }
-    std::cout<<"Launched threads\n";
+    // std::cout<<"Launched threads\n";
     for(int i=0; i<THREADS_X*THREADS_Y; i++) Threads_Mine[i].join();
-    std::cout<<"Threads joined\n";
+    // std::cout<<"Threads joined\n";
 }
 
 void n_square_collision_solve(float *pos, const int &p_count, const int &iterations)
@@ -473,9 +474,9 @@ void tagParticles(const sf::Vector2f &mouse_coordinates, float *col, sf::CircleS
 
 int main(int argc, char **argv)
 {
+        particle_count = DEFAULT_PARTICLE_COUNT;
     // if (argc == 1)
     // {
-    //     particle_count = DEFAULT_PARTICLE_COUNT;
     // }
     // else
     // {
@@ -537,8 +538,8 @@ int main(int argc, char **argv)
             stepParticles(ppos, ppos_prev, particle_count, TIME_STEP);
             for (int j = 0; j < GRID_CALCULATIONS_PER_ITER; j++)
             {
-                // solve_collision_threads_grid(ppos, spatial_grid, GRID_CELLS_COUNT_X, GRID_CELLS_COUNT_Y, particle_count, GRID_CELL_DX, GRID_CELL_DY);
-                grid_collision_solve_iterate_grid(ppos, spatial_grid, GRID_CELLS_COUNT_X, GRID_CELLS_COUNT_Y, particle_count, GRID_CELL_DX, GRID_CELL_DY);
+                solve_collision_threads_grid(ppos, spatial_grid, GRID_CELLS_COUNT_X, GRID_CELLS_COUNT_Y, particle_count, GRID_CELL_DX, GRID_CELL_DY);
+                // grid_collision_solve_iterate_grid(ppos, spatial_grid, GRID_CELLS_COUNT_X, GRID_CELLS_COUNT_Y, particle_count, GRID_CELL_DX, GRID_CELL_DY);
                 updateGrid(ppos, spatial_grid, particle_count, GRID_CELLS_COUNT_X, GRID_CELLS_COUNT_Y, GRID_CELL_DX, GRID_CELL_DY);
             }
           
