@@ -8,14 +8,14 @@
 #include <chrono>
 #include <thread>
 
-#define DEFAULT_PARTICLE_COUNT 100000
+#define DEFAULT_PARTICLE_COUNT 3000
 #define DIMENSIONS 2
 #define INTERNAL_DAMPING 0.0f
-#define WALL_DAMPING 0.1f
-#define RADIUS 1
+#define WALL_DAMPING 0.0f
+#define RADIUS 4
 #define RADIUS_SQUARED_TIMES_FOUR 4 * RADIUS *RADIUS
 #define STARTING_VELOCITY_RANGE 10
-#define GRID_OVERLAP_TOLERANCE 3
+#define GRID_OVERLAP_TOLERANCE 5
 #define NEIGHBOURHOOD_RADIUS 1
 
 #define TAGGING_RADIUS 1
@@ -29,12 +29,12 @@
 #define PADDING 10 * NEIGHBOURHOOD_RADIUS
 #define TIME_STEP 0.010f
 #define ITERATIONS_PER_DRAW 5
-#define GRID_CALCULATIONS_PER_ITER 3
+#define GRID_CALCULATIONS_PER_ITER 5
 
 #define MAGNIFICATION 1.5f
 
-#define THREADS_X 10
-#define THREADS_Y 5
+#define THREADS_X 2
+#define THREADS_Y 1
 
 // #define DEBUG_MODE true
 // #define PERFORMANCE_DEBUG_MODE
@@ -47,8 +47,8 @@ Update Grid took: 0.048132ms
 
 unsigned int particle_count;
 const float G = 9.81;
-const int GRID_CELLS_COUNT_X = ceil((BOUNDARY_X) / (2.0f * RADIUS));
-const int GRID_CELLS_COUNT_Y = ceil((BOUNDARY_Y) / (2.0f * RADIUS));
+const int GRID_CELLS_COUNT_X = ceil((BOUNDARY_X) / (2.0f * (RADIUS)));
+const int GRID_CELLS_COUNT_Y = ceil((BOUNDARY_Y) / (2.0f * (RADIUS)));
 // const int GRID_CELLS_COUNT_Y = 120;
 // const int GRID_CELLS_COUNT_X = 120;
 const float GRID_CELL_DX = (BOUNDARY_X) / ((float)GRID_CELLS_COUNT_X);
@@ -391,7 +391,7 @@ void solve_collision_threads_grid(float *pos, const unsigned int *grid, const in
 #endif
     // Master dispatcher. Is reponsible for calling the threads after assigning them the proper domains to work on. race conditions allowed for now.
     std::thread Threads_Mine[THREADS_X*THREADS_Y];
-    const int thread_grid_padding = 3 * NEIGHBOURHOOD_RADIUS;
+    const int thread_grid_padding = 1 * NEIGHBOURHOOD_RADIUS;
     for (int i = 0; i < THREADS_X; i++)
     {
         int xidx = i * WORK_UNIT_CELLS_X;
@@ -410,11 +410,11 @@ void solve_collision_threads_grid(float *pos, const unsigned int *grid, const in
             if (j == 0)
             {
                 yidx = thread_grid_padding;
-                gridy = WORK_UNIT_CELLS_Y - thread_grid_padding;
+                // gridy = WORK_UNIT_CELLS_Y - thread_grid_padding;
             }
             if (j == THREADS_Y - 1)
             {
-                // yidx = (THREADS_Y - 1) * WORK_UNIT_CELLS_Y - thread_grid_padding;
+                yidx = (THREADS_Y - 1) * WORK_UNIT_CELLS_Y;
                 gridy = county - yidx - thread_grid_padding;
             };
 
