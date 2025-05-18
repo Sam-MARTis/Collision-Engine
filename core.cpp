@@ -531,10 +531,10 @@ int main(int argc, char **argv)
             stepParticles(ppos, ppos_prev, particle_count, TIME_STEP);
             for (int j = 0; j < GRID_CALCULATIONS_PER_ITER; j++)
             {
-                // solve_collision_threads_grid(ppos, spatial_grid, GRID_CELLS_COUNT_X, GRID_CELLS_COUNT_Y, particle_count, GRID_CELL_DX, GRID_CELL_DY);
-                grid_collision_solve_iterate_grid(ppos, spatial_grid, GRID_CELLS_COUNT_X, GRID_CELLS_COUNT_Y, particle_count, GRID_CELL_DX, GRID_CELL_DY);
-                updateGrid(ppos, spatial_grid, particle_count, GRID_CELLS_COUNT_X, GRID_CELLS_COUNT_Y, GRID_CELL_DX, GRID_CELL_DY);
+                solve_collision_threads_grid(ppos, spatial_grid, GRID_CELLS_COUNT_X, GRID_CELLS_COUNT_Y, particle_count, GRID_CELL_DX, GRID_CELL_DY);
+                // grid_collision_solve_iterate_grid(ppos, spatial_grid, GRID_CELLS_COUNT_X, GRID_CELLS_COUNT_Y, particle_count, GRID_CELL_DX, GRID_CELL_DY);
             }
+            updateGrid(ppos, spatial_grid, particle_count, GRID_CELLS_COUNT_X, GRID_CELLS_COUNT_Y, GRID_CELL_DX, GRID_CELL_DY);
         }
 
         window.display();
