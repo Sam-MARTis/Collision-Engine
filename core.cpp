@@ -7,14 +7,14 @@
 #include <fstream>
 #include <chrono>
 
-#define DEFAULT_PARTICLE_COUNT 7000
+#define DEFAULT_PARTICLE_COUNT 5000
 #define DIMENSIONS 2
 #define INTERNAL_DAMPING 0.0f
 #define WALL_DAMPING 0.1f
 #define RADIUS 1
-#define RADIUS_SQUARED_TIMES_FOUR 4*RADIUS*RADIUS
+#define RADIUS_SQUARED_TIMES_FOUR 4 * RADIUS *RADIUS
 #define STARTING_VELOCITY_RANGE 10
-#define GRID_OVERLAP_TOLERANCE 2
+#define GRID_OVERLAP_TOLERANCE 3
 #define NEIGHBOURHOOD_RADIUS 1
 
 #define TAGGING_RADIUS 1
@@ -23,27 +23,20 @@
 #define READ_CACHE_COLOURS
 #define CACHE_FILE "colours_cache.txt"
 
-
 #define BOUNDARY_X 1000.0f
-#define BOUNDARY_Y 600.0f
-#define PADDING 10*NEIGHBOURHOOD_RADIUS
+#define BOUNDARY_Y 400.0f
+#define PADDING 10 * NEIGHBOURHOOD_RADIUS
 #define TIME_STEP 0.005f
-#define ITERATIONS_PER_DRAW 2
-#define GRID_CALCULATIONS_PER_ITER 1
+#define ITERATIONS_PER_DRAW 10
+#define GRID_CALCULATIONS_PER_ITER 3
 
 #define MAGNIFICATION 1.5f
-
-
 
 #define THREADS_X 5
 #define THREADS_Y 3
 
-
 // #define DEBUG_MODE true
 // #define PERFORMANCE_DEBUG_MODE
-
-
-
 
 /*
 step took: 0.063394ms
@@ -51,29 +44,28 @@ Collision solver took: 3.84394ms
 Update Grid took: 0.048132ms
 */
 
-
-
-
 unsigned int particle_count;
 const float G = 9.81;
-const int GRID_CELLS_COUNT_X = ceil((BOUNDARY_X) / (2.0f*RADIUS));
-const int GRID_CELLS_COUNT_Y = ceil((BOUNDARY_Y) / (2.0f*RADIUS));
+const int GRID_CELLS_COUNT_X = ceil((BOUNDARY_X) / (2.0f * RADIUS));
+const int GRID_CELLS_COUNT_Y = ceil((BOUNDARY_Y) / (2.0f * RADIUS));
 // const int GRID_CELLS_COUNT_Y = 120;
 // const int GRID_CELLS_COUNT_X = 120;
 const float GRID_CELL_DX = (BOUNDARY_X) / ((float)GRID_CELLS_COUNT_X);
 const float GRID_CELL_DY = (BOUNDARY_Y) / ((float)GRID_CELLS_COUNT_Y);
-const int WORK_UNIT_CELLS_X = ceil((1.0f*GRID_CELLS_COUNT_X - (1.0f*PADDING)/GRID_CELL_DX)/THREADS_X);
-const int WORK_UNIT_CELLS_Y = ceil((1.0f*GRID_CELLS_COUNT_Y - (1.0f*PADDING)/GRID_CELL_DY)/THREADS_Y);
+const int WORK_UNIT_CELLS_X = ceil((1.0f * GRID_CELLS_COUNT_X - (1.0f * PADDING) / GRID_CELL_DX) / THREADS_X);
+const int WORK_UNIT_CELLS_Y = ceil((1.0f * GRID_CELLS_COUNT_Y - (1.0f * PADDING) / GRID_CELL_DY) / THREADS_Y);
 
-// const int 
+// const int
 
-float randf(){
-    return (float)rand()/RAND_MAX;
+float randf()
+{
+    return (float)rand() / RAND_MAX;
 }
-sf::Color hueToColor(float hueDegrees) {
+sf::Color hueToColor(float hueDegrees)
+{
     float h = fmod(hueDegrees, 360.0f);
-    float s = 1.0f; 
-    float l = 0.5f; 
+    float s = 1.0f;
+    float l = 0.5f;
 
     float c = (1 - std::fabs(2 * l - 1)) * s;
     float x = c * (1 - std::fabs(fmod(h / 60.0f, 2) - 1));
@@ -81,21 +73,48 @@ sf::Color hueToColor(float hueDegrees) {
 
     float r = 0, g = 0, b = 0;
 
-    if (0 <= h && h < 60)      { r = c; g = x; b = 0; }
-    else if (60 <= h && h < 120)  { r = x; g = c; b = 0; }
-    else if (120 <= h && h < 180) { r = 0; g = c; b = x; }
-    else if (180 <= h && h < 240) { r = 0; g = x; b = c; }
-    else if (240 <= h && h < 300) { r = x; g = 0; b = c; }
-    else if (300 <= h && h < 360) { r = c; g = 0; b = x; }
+    if (0 <= h && h < 60)
+    {
+        r = c;
+        g = x;
+        b = 0;
+    }
+    else if (60 <= h && h < 120)
+    {
+        r = x;
+        g = c;
+        b = 0;
+    }
+    else if (120 <= h && h < 180)
+    {
+        r = 0;
+        g = c;
+        b = x;
+    }
+    else if (180 <= h && h < 240)
+    {
+        r = 0;
+        g = x;
+        b = c;
+    }
+    else if (240 <= h && h < 300)
+    {
+        r = x;
+        g = 0;
+        b = c;
+    }
+    else if (300 <= h && h < 360)
+    {
+        r = c;
+        g = 0;
+        b = x;
+    }
 
     return sf::Color(
         static_cast<sf::Uint8>((r + m) * 255),
         static_cast<sf::Uint8>((g + m) * 255),
-        static_cast<sf::Uint8>((b + m) * 255)
-    );
+        static_cast<sf::Uint8>((b + m) * 255));
 }
-
-
 
 struct Timer
 {
@@ -103,52 +122,56 @@ struct Timer
     std::chrono::duration<float> duration;
     std::string name;
 
-    Timer(std::string in){
+    Timer(std::string in)
+    {
         start = std::chrono::high_resolution_clock::now();
         name = in;
     }
-    ~Timer(){
+    ~Timer()
+    {
         end = std::chrono::high_resolution_clock::now();
-        duration = end-start;
-        std::cout<<name<<" took: " << duration.count()*1000.0f<<"ms\n";
+        duration = end - start;
+        std::cout << name << " took: " << duration.count() * 1000.0f << "ms\n";
     }
 };
 
-
-void initializeParticles(float *pos, float *init_pos, float *col, const int& count, const float& dt)
+void initializeParticles(float *pos, float *init_pos, float *col, const int &count, const float &dt)
 {
     for (int i = 0; i < count; i++)
     {
-        init_pos[i * 2] = PADDING + randf() * (BOUNDARY_X - 2*PADDING);
-        init_pos[i * 2 + 1] = PADDING + randf() * (BOUNDARY_Y - 2*PADDING);
-        pos[i * 2] = init_pos[i*2] + STARTING_VELOCITY_RANGE * (randf() * 2.0f - 1.0f)*dt;
-        pos[i * 2 + 1] = init_pos[i*2+1]+ STARTING_VELOCITY_RANGE * (randf() * 2.0f - 1.0f)*dt + 0.5*G*dt*dt;
+        init_pos[i * 2] = PADDING + randf() * (BOUNDARY_X - 2 * PADDING);
+        init_pos[i * 2 + 1] = PADDING + randf() * (BOUNDARY_Y - 2 * PADDING);
+        pos[i * 2] = init_pos[i * 2] + STARTING_VELOCITY_RANGE * (randf() * 2.0f - 1.0f) * dt;
+        pos[i * 2 + 1] = init_pos[i * 2 + 1] + STARTING_VELOCITY_RANGE * (randf() * 2.0f - 1.0f) * dt + 0.5 * G * dt * dt;
         col[i] = 120.0f;
     }
 
-    #ifdef READ_CACHE_COLOURS
-        std::ifstream fin(CACHE_FILE);
-        int cached_particles;
-        fin>>cached_particles;
-        const int reads = cached_particles<count? cached_particles : count;
-        for(int i=0; i<reads; i++){
-            fin >> col[i];
-        }
-    #endif
+#ifdef READ_CACHE_COLOURS
+    std::ifstream fin(CACHE_FILE);
+    int cached_particles;
+    fin >> cached_particles;
+    const int reads = cached_particles < count ? cached_particles : count;
+    for (int i = 0; i < reads; i++)
+    {
+        fin >> col[i];
+    }
+#endif
 }
 
-void cacheColours(float* col, const int& particle_count, const std::string& filename){
+void cacheColours(float *col, const int &particle_count, const std::string &filename)
+{
     std::ofstream fout(filename);
-    fout<<particle_count<<"\n";
-    for (int i=0; i<particle_count; i++){
-        fout<<col[i]<<"\n";
+    fout << particle_count << "\n";
+    for (int i = 0; i < particle_count; i++)
+    {
+        fout << col[i] << "\n";
     }
 }
-void stepParticles(float *pos, float *prev_pos, const int& count, const float& dt)
+void stepParticles(float *pos, float *prev_pos, const int &count, const float &dt)
 {
-    #ifdef PERFORMANCE_DEBUG_MODE
+#ifdef PERFORMANCE_DEBUG_MODE
     Timer timer("step");
-    #endif
+#endif
     for (int i = 0; i < count; i++)
     {
         // pos[i * 2] += vel[i * 2] * dt;
@@ -160,98 +183,101 @@ void stepParticles(float *pos, float *prev_pos, const int& count, const float& d
         // pos[i * 2 + 1] += vel[i * 2 + 1] * dt + 0.5f *G * dt*dt;
         // vel[i * 2 + 1] += G * dt;
 
+        const float newX = 2 * pos[i * 2] - prev_pos[2 * i];
+        const float newY = 2 * pos[i * 2 + 1] - prev_pos[i * 2 + 1] + G * dt * dt;
+        prev_pos[2 * i] = pos[2 * i];
+        prev_pos[2 * i + 1] = pos[2 * i + 1];
+        pos[2 * i] = newX;
+        pos[2 * i + 1] = newY;
 
-        const float newX = 2*pos[i*2] - prev_pos[2*i];
-        const float newY = 2*pos[i*2 + 1] - prev_pos[i*2 + 1] + G * dt * dt;
-        prev_pos[2*i] = pos[2*i];
-        prev_pos[2*i+1] = pos[2*i+1];
-        pos[2*i] = newX;
-        pos[2*i + 1] = newY;
-
-
-        if(pos[i*2+1]>BOUNDARY_Y-2*RADIUS - PADDING){
-            pos[i*2+1] = BOUNDARY_Y-2*RADIUS - PADDING;
-        }
-        if(pos[i*2+1]<RADIUS + PADDING){
-            pos[i*2+1] = RADIUS + PADDING;
-        }
-
-        if((pos[i*2]>BOUNDARY_X-2*RADIUS - PADDING)){
-            pos[i*2] = BOUNDARY_X-2*RADIUS - PADDING;
-
-        } 
-        if(pos[i*2]< RADIUS + PADDING){
-            pos[i*2] = RADIUS + PADDING;
-        }
-        
-    }
-
-}
-void updateGrid(const float *pos, unsigned int *grid, const int& p_count, const int& countx, const int& county, const float& cell_dx, const float& cell_dy)
-{   
-    #ifdef PERFORMANCE_DEBUG_MODE
-    Timer timer("Update Grid");
-    #endif
-    memset(grid, 0, sizeof(float) * countx * county*(GRID_OVERLAP_TOLERANCE+1));
-
-    
-        for (int i = 0; i < p_count; i++)
+        if (pos[i * 2 + 1] > BOUNDARY_Y - 2 * RADIUS - PADDING)
         {
-            const int x_idx = floorf(pos[i * 2] / cell_dx);
-            const int y_idx = floorf(pos[i * 2 + 1] / cell_dy);
-            const int idx = (x_idx + y_idx*countx)*(GRID_OVERLAP_TOLERANCE+1);
-            unsigned int& cells_occupied = grid[idx];
-            if(cells_occupied==GRID_OVERLAP_TOLERANCE){
-                #ifdef DEBUG_MODE
-                fprintf(stderr, "Error. Grid Tolerance exceeded at index (x: %d, y: %d)", x_idx, y_idx );
-                #endif
-                continue;
-                // exit(1);
-            }
-
-
-            // if(grid[x_idx+y_idx*countx] != 0){
-            //     fprintf(stderr, "Error. Grid collision detected at index (x: %d, y: %d)", x_idx, y_idx );
-            //     exit(1);
-            // }
-
-
-            cells_occupied ++;
-            grid[idx + cells_occupied] = i;
-            // grid[x_idx + y_idx * countx] = i + 1;
+            pos[i * 2 + 1] = BOUNDARY_Y - 2 * RADIUS - PADDING;
         }
-    
-    
+        if (pos[i * 2 + 1] < RADIUS + PADDING)
+        {
+            pos[i * 2 + 1] = RADIUS + PADDING;
+        }
+
+        if ((pos[i * 2] > BOUNDARY_X - 2 * RADIUS - PADDING))
+        {
+            pos[i * 2] = BOUNDARY_X - 2 * RADIUS - PADDING;
+        }
+        if (pos[i * 2] < RADIUS + PADDING)
+        {
+            pos[i * 2] = RADIUS + PADDING;
+        }
+    }
+}
+void updateGrid(const float *pos, unsigned int *grid, const int &p_count, const int &countx, const int &county, const float &cell_dx, const float &cell_dy)
+{
+#ifdef PERFORMANCE_DEBUG_MODE
+    Timer timer("Update Grid");
+#endif
+    memset(grid, 0, sizeof(float) * countx * county * (GRID_OVERLAP_TOLERANCE + 1));
+
+    for (int i = 0; i < p_count; i++)
+    {
+        const int x_idx = floorf(pos[i * 2] / cell_dx);
+        const int y_idx = floorf(pos[i * 2 + 1] / cell_dy);
+        const int idx = (x_idx + y_idx * countx) * (GRID_OVERLAP_TOLERANCE + 1);
+        unsigned int &cells_occupied = grid[idx];
+        if (cells_occupied == GRID_OVERLAP_TOLERANCE)
+        {
+#ifdef DEBUG_MODE
+            fprintf(stderr, "Error. Grid Tolerance exceeded at index (x: %d, y: %d)", x_idx, y_idx);
+#endif
+            continue;
+            // exit(1);
+        }
+
+        // if(grid[x_idx+y_idx*countx] != 0){
+        //     fprintf(stderr, "Error. Grid collision detected at index (x: %d, y: %d)", x_idx, y_idx );
+        //     exit(1);
+        // }
+
+        cells_occupied++;
+        grid[idx + cells_occupied] = i;
+        // grid[x_idx + y_idx * countx] = i + 1;
+    }
 }
 
-void handle_collision(float *pos, const int& id1, const int& id2){
-    const int p1 = (id1)*2;
-    const int p2 = (id2)*2;
+void handle_collision(float *pos, const int &id1, const int &id2)
+{
+    const int p1 = (id1) * 2;
+    const int p2 = (id2) * 2;
     const float dx = pos[p2] - pos[p1];
-    const float dy = pos[p2+1] - pos[p1+1];
-    const float distance_squared = pow(dx, 2) + pow(dy, 2);
-    if(distance_squared> RADIUS_SQUARED_TIMES_FOUR){
+    const float dy = pos[p2 + 1] - pos[p1 + 1];
+    const float distance_squared = dx*dx + dy*dy;
+    if (distance_squared > RADIUS_SQUARED_TIMES_FOUR)
+    {
         return;
     }
     const float distance = sqrtf(distance_squared);
-    if (distance < 1e-6f) return;
-    const float nx = dx/distance;
-    const float ny = dy/distance;
-    const float dR = RADIUS - 0.5f*distance;
+    if (distance < 1e-6f)
+        return;
+    const float nx = dx / distance;
+    const float ny = dy / distance;
+    const float dR = RADIUS - 0.5f * distance;
     pos[p1] -= (nx * dR);
-    pos[p1+1] -= (ny * dR);
+    pos[p1 + 1] -= (ny * dR);
     pos[p2] += (nx * dR);
-    pos[p2+1] += (ny * dR);
+    pos[p2 + 1] += (ny * dR);
 }
 
-void handle_collision_grid(float *pos, const unsigned int* grid, const int& countx, const int& county, const int& x_idx, const int& y_idx, const int& p_id){
-    for(int i= -NEIGHBOURHOOD_RADIUS; i<=NEIGHBOURHOOD_RADIUS; i++){
-        for(int j= -NEIGHBOURHOOD_RADIUS; j<=NEIGHBOURHOOD_RADIUS; j++){
-            const int idx_to_check = ((x_idx+i)+(y_idx+j)*countx)*(GRID_OVERLAP_TOLERANCE+1);
-            const int& cell_count = grid[idx_to_check];
-            if(cell_count==0) continue;
-            for(int k=1; k<=cell_count; k++){
-                handle_collision(pos, p_id, grid[idx_to_check+k]);
+void handle_collision_grid(float *pos, const unsigned int *grid, const int &countx, const int &county, const int &x_idx, const int &y_idx, const int &p_id)
+{
+    for (int i = -NEIGHBOURHOOD_RADIUS; i <= NEIGHBOURHOOD_RADIUS; i++)
+    {
+        for (int j = -NEIGHBOURHOOD_RADIUS; j <= NEIGHBOURHOOD_RADIUS; j++)
+        {
+            const int idx_to_check = ((x_idx + i) + (y_idx + j) * countx) * (GRID_OVERLAP_TOLERANCE + 1);
+            const int &cell_count = grid[idx_to_check];
+            if (cell_count == 0)
+                continue;
+            for (int k = 1; k <= cell_count; k++)
+            {
+                handle_collision(pos, p_id, grid[idx_to_check + k]);
             }
             // const int p2 = grid[(x_idx+i) + (y_idx+j)*countx];
             // if((p2 != 0) && (p2 != p_id) ){
@@ -261,160 +287,182 @@ void handle_collision_grid(float *pos, const unsigned int* grid, const int& coun
     }
 }
 
-
-void grid_collision_solve(float *pos, const unsigned int* grid, const int& countx, const int& county, const int& p_count, const float& cell_dx, const float& cell_dy){
-    #ifdef PERFORMANCE_DEBUG_MODE
+void grid_collision_solve(float *pos, const unsigned int *grid, const int &countx, const int &county, const int &p_count, const float &cell_dx, const float &cell_dy)
+{
+#ifdef PERFORMANCE_DEBUG_MODE
     Timer timer("Collision solver");
-    #endif
-    
-    for(int i=0; i<p_count; i++){
+#endif
+
+    for (int i = 0; i < p_count; i++)
+    {
         const int x_idx = floorf(pos[i * 2] / cell_dx);
         const int y_idx = floorf(pos[i * 2 + 1] / cell_dy);
         handle_collision_grid(pos, grid, countx, county, x_idx, y_idx, i);
     }
 }
-void handle_collision_grid_iterate_grid(float *pos, const unsigned int* grid, const int& countx, const int& county, const int& x_idx, const int& y_idx){
-    int ids_in_range[(1+2*NEIGHBOURHOOD_RADIUS)*(1+2*NEIGHBOURHOOD_RADIUS)*GRID_OVERLAP_TOLERANCE];
+void handle_collision_grid_iterate_grid(float *pos, const unsigned int *grid, const int &countx, const int &county, const int &x_idx, const int &y_idx)
+{
+    int ids_in_range[(1 + 2 * NEIGHBOURHOOD_RADIUS) * (1 + 2 * NEIGHBOURHOOD_RADIUS) * GRID_OVERLAP_TOLERANCE];
     int particles_in_range = 0;
-    for(int i= -NEIGHBOURHOOD_RADIUS; i<=NEIGHBOURHOOD_RADIUS; i++){
-        for(int j= -NEIGHBOURHOOD_RADIUS; j<=NEIGHBOURHOOD_RADIUS; j++){
-            const int idx_to_check = ((x_idx+i)+(y_idx+j)*countx)*(GRID_OVERLAP_TOLERANCE+1);
+    for (int i = -NEIGHBOURHOOD_RADIUS; i <= NEIGHBOURHOOD_RADIUS; i++)
+    {
+        for (int j = -NEIGHBOURHOOD_RADIUS; j <= NEIGHBOURHOOD_RADIUS; j++)
+        {
+            const int idx_to_check = ((x_idx + i) + (y_idx + j) * countx) * (GRID_OVERLAP_TOLERANCE + 1);
             const int& cell_count = grid[idx_to_check];
-            if(cell_count==0) continue;
-            for(int k=1; k<=cell_count; k++){
+            if (cell_count == 0)
+                continue;
+            for (int k = 1; k <= cell_count; k++)
+            {
                 // handle_collision(pos, p_id, grid[idx_to_check+k]);
-                ids_in_range[particles_in_range] = grid[idx_to_check+k];
+                ids_in_range[particles_in_range] = grid[idx_to_check + k];
                 particles_in_range++;
-                
             }
         }
     }
-    for(int i=0; i<particles_in_range; i++){
-        for(int j=i+1; j<particles_in_range; j++){
-            handle_collision(pos, ids_in_range[i], ids_in_range[j]);
+    const int self_idx = ((x_idx) + (y_idx) * countx) * (GRID_OVERLAP_TOLERANCE + 1);
+    const int& particles_present = grid[self_idx];
+    
+    for(int i=1; i<=particles_present; i++){
+        const int p1_id = grid[self_idx + i];
+        for(int j=0; j<particles_in_range; j++){
+            const int p2_id = ids_in_range[j];
+            if(p2_id==p1_id) continue;
+            handle_collision(pos, p1_id, p2_id);
         }
+
+
+
     }
+    // for (int i = 0; i < particles_in_range; i++)
+    // {
+    //     for (int j = i + 1; j < particles_in_range; j++)
+    //     {
+    //         handle_collision(pos, ids_in_range[i], ids_in_range[j]);
+    //     }
+    // }
 }
 
-void grid_collision_solve_iterate_grid(float *pos, const unsigned int* grid, const int& countx, const int& county, const int& p_count, const float& cell_dx, const float& cell_dy){
-    #ifdef PERFORMANCE_DEBUG_MODE
+void grid_collision_solve_iterate_grid(float *pos, const unsigned int *grid, const int &countx, const int &county, const int &p_count, const float &cell_dx, const float &cell_dy)
+{
+#ifdef PERFORMANCE_DEBUG_MODE
     Timer timer("Collision solver");
-    #endif
-    
+#endif
+
     // for(int i=0; i<p_count; i++){
     //     const int x_idx = floorf(pos[i * 2] / cell_dx);
     //     const int y_idx = floorf(pos[i * 2 + 1] / cell_dy);
     //     handle_collision_grid_iterate_grid(pos, grid, countx, county, x_idx, y_idx);
     // }
-    for(int i=2*NEIGHBOURHOOD_RADIUS; i<countx - 2*NEIGHBOURHOOD_RADIUS; i++){
-        for(int j=2*NEIGHBOURHOOD_RADIUS; j<county - 2*NEIGHBOURHOOD_RADIUS; j++){
-            const int idx_to_check = ((i)+(j)*countx)*(GRID_OVERLAP_TOLERANCE+1);
-            if(grid[idx_to_check]==0) continue;
+    for (int i = 2 * NEIGHBOURHOOD_RADIUS; i < countx - 2 * NEIGHBOURHOOD_RADIUS; i++)
+    {
+        for (int j = 2 * NEIGHBOURHOOD_RADIUS; j < county - 2 * NEIGHBOURHOOD_RADIUS; j++)
+        {
+            const int idx_to_check = ((i) + (j)*countx) * (GRID_OVERLAP_TOLERANCE + 1);
+            if (grid[idx_to_check] == 0)
+                continue;
             handle_collision_grid_iterate_grid(pos, grid, countx, county, i, j);
         }
     }
 }
 
-void thread_collision_solve_grid(float *pos, const unsigned int* grid, const int& countx, const int& county, const int& p_count, const float& cell_dx, const float& cell_dy, const int& thread_start_X, const int& thread_start_Y, const int& gridx, const int& gridy){
-    // he master thread dispatcher calls this function with proper arguements
-    #ifdef PERFORMANCE_DEBUG_MODE
+void thread_collision_solve_grid(float *pos, const unsigned int *grid, const int &countx, const int &county, const int &p_count, const float &cell_dx, const float &cell_dy, const int &thread_start_X, const int &thread_start_Y, const int &gridx, const int &gridy)
+{
+// he master thread dispatcher calls this function with proper arguements
+#ifdef PERFORMANCE_DEBUG_MODE
     Timer timer("Collision solver");
-    #endif
+#endif
 
-
-    for(int i=thread_start_X; i<thread_start_X+gridx; i++){
-        for(int j=thread_start_Y; j<thread_start_Y+gridy; j++){
-            const int idx_to_check = ((i)+(j)*countx)*(GRID_OVERLAP_TOLERANCE+1);
-            if(grid[idx_to_check]==0) continue;
+    for (int i = thread_start_X; i < thread_start_X + gridx; i++)
+    {
+        for (int j = thread_start_Y; j < thread_start_Y + gridy; j++)
+        {
+            const int idx_to_check = ((i) + (j)*countx) * (GRID_OVERLAP_TOLERANCE + 1);
+            if (grid[idx_to_check] == 0)
+                continue;
             handle_collision_grid_iterate_grid(pos, grid, countx, county, i, j);
         }
     }
 }
 
-void solve_collision_threads_grid(float *pos, const unsigned int* grid, const int& countx, const int& county, const int& p_count, const float& cell_dx, const float& cell_dy){
-    // Master dispatcher. Is reponsible for calling the threads after assigning them the proper domains to work on. race conditions allowed for now. 
-    const int cell_padding = 3*NEIGHBOURHOOD_RADIUS;
-    for(int i=1; i<THREADS_X-1; i++){
-        const int xidx = i*WORK_UNIT_CELLS_X;
-        //j==0 case
-        thread_collision_solve_grid(pos, grid, countx, county, p_count, cell_dx, cell_dy, xidx, cell_padding, WORK_UNIT_CELLS_X, WORK_UNIT_CELLS_Y);
-        
-        for(int j=1; j<THREADS_Y-1; j++){
-            const int yidx = j*WORK_UNIT_CELLS_Y;
-            thread_collision_solve_grid(pos, grid, countx, county, p_count, cell_dx, cell_dy, xidx, yidx, WORK_UNIT_CELLS_X, WORK_UNIT_CELLS_Y);
+void solve_collision_threads_grid(float *pos, const unsigned int *grid, const int &countx, const int &county, const int &p_count, const float &cell_dx, const float &cell_dy)
+{
+    // Master dispatcher. Is reponsible for calling the threads after assigning them the proper domains to work on. race conditions allowed for now.
+    const int thread_grid_padding = 3 * NEIGHBOURHOOD_RADIUS;
+    for (int i = 0; i < THREADS_X; i++)
+    {
+        int xidx = i * WORK_UNIT_CELLS_X;
+        int gridx = WORK_UNIT_CELLS_X;
+        if (i == 0)
+        {
+            xidx = thread_grid_padding;
+            gridx = WORK_UNIT_CELLS_X - thread_grid_padding;
         }
-        //j==THREADS_Y-1 case
-        const int final_yidx = (THREADS_Y-1)*WORK_UNIT_CELLS_Y;
-        thread_collision_solve_grid(pos, grid, countx, county, p_count, cell_dx, cell_dy, xidx, final_yidx, WORK_UNIT_CELLS_X, WORK_UNIT_CELLS_Y-cell_padding);
-        
-    }
+        if(i==THREADS_X-1) gridx = countx - xidx - thread_grid_padding;
+  
+        for (int j = 0; j < THREADS_Y; j++)
+        {
+            int yidx = j * WORK_UNIT_CELLS_Y;
+            int gridy = WORK_UNIT_CELLS_Y;
+            if (j == 0)
+            {
+                yidx = thread_grid_padding;
+                gridy = WORK_UNIT_CELLS_Y - thread_grid_padding;
+            }
+            if (j == THREADS_Y - 1)
+            {
+                // yidx = (THREADS_Y - 1) * WORK_UNIT_CELLS_Y - thread_grid_padding;
+                gridy = county - yidx - thread_grid_padding;
+            };
 
-    //i==0
-    const int gridx = WORK_UNIT_CELLS_X-cell_padding;
-    const int xidx = cell_padding;
-    const int xidx2 = WORK_UNIT_CELLS_X - cell_padding;
-
-    const int final_yidx = (THREADS_Y-1)*WORK_UNIT_CELLS_Y;
-
-    thread_collision_solve_grid(pos, grid, countx, county, p_count, cell_dx, cell_dy, xidx, cell_padding, gridx, WORK_UNIT_CELLS_Y);
-        
-        for(int j=1; j<THREADS_Y-1; j++){
-            const int yidx = j*WORK_UNIT_CELLS_Y;
-            thread_collision_solve_grid(pos, grid, countx, county, p_count, cell_dx, cell_dy, xidx, yidx, gridx, WORK_UNIT_CELLS_Y);
+            thread_collision_solve_grid(pos, grid, countx, county, p_count, cell_dx, cell_dy, xidx, yidx, gridx, gridy);
         }
-        //j==THREADS_Y-1 case
-    thread_collision_solve_grid(pos, grid, countx, county, p_count, cell_dx, cell_dy, xidx, final_yidx, gridx, WORK_UNIT_CELLS_Y-cell_padding);
-    
-
-
-
-    thread_collision_solve_grid(pos, grid, countx, county, p_count, cell_dx, cell_dy, xidx2, cell_padding, gridx, WORK_UNIT_CELLS_Y);
-        
-    for(int j=1; j<THREADS_Y-1; j++){
-        const int yidx = j*WORK_UNIT_CELLS_Y;
-        thread_collision_solve_grid(pos, grid, countx, county, p_count, cell_dx, cell_dy, xidx2, yidx, gridx, WORK_UNIT_CELLS_Y);
     }
-    //j==THREADS_Y-1 case
-    thread_collision_solve_grid(pos, grid, countx, county, p_count, cell_dx, cell_dy, xidx2, final_yidx, gridx, WORK_UNIT_CELLS_Y-cell_padding);
-
 }
 
-
-
-
-void n_square_collision_solve(float *pos, const int& p_count, const int& iterations){
-    for(int iteration =0; iteration< iterations; iteration++){
-        for(int i = 0; i<p_count-1; i++){
-            for(int j=i; j<p_count; j++){
+void n_square_collision_solve(float *pos, const int &p_count, const int &iterations)
+{
+    for (int iteration = 0; iteration < iterations; iteration++)
+    {
+        for (int i = 0; i < p_count - 1; i++)
+        {
+            for (int j = i; j < p_count; j++)
+            {
                 handle_collision(pos, i, j);
             }
         }
     }
 }
-void renderParticles(sf::RenderWindow& window, sf::CircleShape *points,  const float* pos, const int& particle_count){
-    for(int i=0; i<particle_count; i++){
-        points[i].setPosition(pos[2*i]*MAGNIFICATION, pos[2*i +1]*MAGNIFICATION);
+void renderParticles(sf::RenderWindow &window, sf::CircleShape *points, const float *pos, const int &particle_count)
+{
+    for (int i = 0; i < particle_count; i++)
+    {
+        points[i].setPosition(pos[2 * i] * MAGNIFICATION, pos[2 * i + 1] * MAGNIFICATION);
         window.draw(points[i]);
     }
-
 }
-void tagParticles(const sf::Vector2f& mouse_coordinates, float* col, sf::CircleShape *points,  const unsigned int* grid, const int& countx, const int& county, const float& cell_dx, const float& cell_dy){
+void tagParticles(const sf::Vector2f &mouse_coordinates, float *col, sf::CircleShape *points, const unsigned int *grid, const int &countx, const int &county, const float &cell_dx, const float &cell_dy)
+{
     const float mouseX = (float)mouse_coordinates.x;
     const float mouseY = (float)mouse_coordinates.y;
-    const int x_idx = floorf(mouseX/ cell_dx);
+    const int x_idx = floorf(mouseX / cell_dx);
     const int y_idx = floorf(mouseY / cell_dy);
-    for(int l= -TAGGING_RADIUS; l<=TAGGING_RADIUS; l++){
-            for(int m = -TAGGING_RADIUS; m<= TAGGING_RADIUS; m++){
-            const int idx = ((x_idx+l) + (y_idx+m)*countx )*(GRID_OVERLAP_TOLERANCE + 1);
-            if(grid[idx]==0) continue;;
-            for(int i=1; i<=grid[idx]; i++){
-                const int id = grid[idx+i];
-                col[id]=TAG_COLOUR;
+    for (int l = -TAGGING_RADIUS; l <= TAGGING_RADIUS; l++)
+    {
+        for (int m = -TAGGING_RADIUS; m <= TAGGING_RADIUS; m++)
+        {
+            const int idx = ((x_idx + l) + (y_idx + m) * countx) * (GRID_OVERLAP_TOLERANCE + 1);
+            if (grid[idx] == 0)
+                continue;
+            ;
+            for (int i = 1; i <= grid[idx]; i++)
+            {
+                const int id = grid[idx + i];
+                col[id] = TAG_COLOUR;
                 points[id].setFillColor(hueToColor(TAG_COLOUR));
             }
         }
     }
-
 }
 
 int main(int argc, char **argv)
@@ -443,86 +491,82 @@ int main(int argc, char **argv)
     // float* ppos_prev = new float[2*particle_count];
     float ppos[2 * particle_count];
     float pcol[particle_count];
-    float ppos_prev[2*particle_count];
+    float ppos_prev[2 * particle_count];
     initializeParticles(ppos, ppos_prev, pcol, particle_count, TIME_STEP);
-    
-    sf::CircleShape* pshapes = new sf::CircleShape[particle_count];
-    for(int i=0; i<particle_count; i++){
-        pshapes[i] = sf::CircleShape((float)(RADIUS*MAGNIFICATION));
+
+    sf::CircleShape *pshapes = new sf::CircleShape[particle_count];
+    for (int i = 0; i < particle_count; i++)
+    {
+        pshapes[i] = sf::CircleShape((float)(RADIUS * MAGNIFICATION));
         pshapes[i].setFillColor(hueToColor(pcol[i]));
     }
-    
+
     // std::cout<<ppos[0]<<" "<<ppos[1]<<std::endl;
     // std::cout<<ppos[0]<<" "<<ppos[1]<<std::endl;
-    
+
     // n_square_collision_solve(ppos, particle_count, 1);
     stepParticles(ppos, ppos_prev, particle_count, TIME_STEP);
-    unsigned int spatial_grid[GRID_CELLS_COUNT_X * GRID_CELLS_COUNT_Y*(GRID_OVERLAP_TOLERANCE+1)];
+    unsigned int spatial_grid[GRID_CELLS_COUNT_X * GRID_CELLS_COUNT_Y * (GRID_OVERLAP_TOLERANCE + 1)];
     updateGrid(ppos, spatial_grid, particle_count, GRID_CELLS_COUNT_X, GRID_CELLS_COUNT_Y, GRID_CELL_DX, GRID_CELL_DY);
 
     /* REMEMBER: Fix collisions BEFORE putting stuff into grid. Wait wtf.
     Ok so... the FIRST time you initialize particles, you have to inefficiently sort collisions.
-    Why? Because theres a chance of strong overlap in the beggining. 
-    Once sorted manually, the grid can take over and, assuming dt is small, there should be no collisions. 
+    Why? Because theres a chance of strong overlap in the beggining.
+    Once sorted manually, the grid can take over and, assuming dt is small, there should be no collisions.
     */
-
 
     sf::ContextSettings settings;
     settings.antialiasingLevel = 16;
-    sf::RenderWindow window(sf::VideoMode((int)round(BOUNDARY_X*MAGNIFICATION), (int)round(BOUNDARY_Y*MAGNIFICATION)), "First window", sf::Style::Default, settings);
+    sf::RenderWindow window(sf::VideoMode((int)round(BOUNDARY_X * MAGNIFICATION), (int)round(BOUNDARY_Y * MAGNIFICATION)), "First window", sf::Style::Default, settings);
     window.setVerticalSyncEnabled(true);
-    
+
     bool dragging = false;
     std::vector<int> selected_particles;
     while (window.isOpen())
     {
         window.clear();
         renderParticles(window, pshapes, ppos, particle_count);
-        for(int i =0; i<ITERATIONS_PER_DRAW; i++){
-        stepParticles(ppos, ppos_prev, particle_count, TIME_STEP);
-        for(int j = 0; j< GRID_CALCULATIONS_PER_ITER; j++){ solve_collision_threads_grid(ppos, spatial_grid, GRID_CELLS_COUNT_X, GRID_CELLS_COUNT_Y, particle_count, GRID_CELL_DX, GRID_CELL_DY);
-        updateGrid(ppos, spatial_grid, particle_count, GRID_CELLS_COUNT_X, GRID_CELLS_COUNT_Y, GRID_CELL_DX, GRID_CELL_DY);
-        }
+        for (int i = 0; i < ITERATIONS_PER_DRAW; i++)
+        {
+            stepParticles(ppos, ppos_prev, particle_count, TIME_STEP);
+            for (int j = 0; j < GRID_CALCULATIONS_PER_ITER; j++)
+            {
+                // solve_collision_threads_grid(ppos, spatial_grid, GRID_CELLS_COUNT_X, GRID_CELLS_COUNT_Y, particle_count, GRID_CELL_DX, GRID_CELL_DY);
+                grid_collision_solve_iterate_grid(ppos, spatial_grid, GRID_CELLS_COUNT_X, GRID_CELLS_COUNT_Y, particle_count, GRID_CELL_DX, GRID_CELL_DY);
+                updateGrid(ppos, spatial_grid, particle_count, GRID_CELLS_COUNT_X, GRID_CELLS_COUNT_Y, GRID_CELL_DX, GRID_CELL_DY);
+            }
         }
 
-
-        
-        
         window.display();
         sf::Event event;
-        
-
 
         while (window.pollEvent(event))
         {
-            if((event.type ==sf::Event::MouseButtonPressed) &&
-            (event.mouseButton.button == sf::Mouse::Left)) dragging=true;
-            if((event.type == sf::Event::MouseButtonReleased) &&
-            (event.mouseButton.button == sf::Mouse::Left)) dragging=false;
+            if ((event.type == sf::Event::MouseButtonPressed) &&
+                (event.mouseButton.button == sf::Mouse::Left))
+                dragging = true;
+            if ((event.type == sf::Event::MouseButtonReleased) &&
+                (event.mouseButton.button == sf::Mouse::Left))
+                dragging = false;
 
-
-            if(dragging){
+            if (dragging)
+            {
                 // std::cout<<"Dragging now"<<std::endl;
                 sf::Vector2f mouseCoords = window.mapPixelToCoords(sf::Mouse::getPosition(window));
-                mouseCoords.x *= 1.0f/MAGNIFICATION;
-                mouseCoords.y *= 1.0f/MAGNIFICATION;
-                tagParticles(mouseCoords, pcol, pshapes, spatial_grid,GRID_CELLS_COUNT_X, GRID_CELLS_COUNT_Y, GRID_CELL_DX, GRID_CELL_DY);
+                mouseCoords.x *= 1.0f / MAGNIFICATION;
+                mouseCoords.y *= 1.0f / MAGNIFICATION;
+                tagParticles(mouseCoords, pcol, pshapes, spatial_grid, GRID_CELLS_COUNT_X, GRID_CELLS_COUNT_Y, GRID_CELL_DX, GRID_CELL_DY);
             }
-            
-            
+
             if (event.type == sf::Event::Closed)
-            { 
-                #ifdef CACHE_COLOURS
-                    cacheColours(pcol, particle_count, CACHE_FILE);
-                #endif
+            {
+#ifdef CACHE_COLOURS
+                cacheColours(pcol, particle_count, CACHE_FILE);
+#endif
                 window.close();
             }
         }
     }
-    
-    
-    
-    
 
     return 0;
 }
