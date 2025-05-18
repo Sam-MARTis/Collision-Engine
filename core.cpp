@@ -8,14 +8,14 @@
 #include <chrono>
 #include <thread>
 
-#define DEFAULT_PARTICLE_COUNT 80000
+#define DEFAULT_PARTICLE_COUNT 100000
 #define DIMENSIONS 2
 #define INTERNAL_DAMPING 0.0f
 #define WALL_DAMPING 0.1f
 #define RADIUS 1
 #define RADIUS_SQUARED_TIMES_FOUR 4 * RADIUS *RADIUS
 #define STARTING_VELOCITY_RANGE 10
-#define GRID_OVERLAP_TOLERANCE 5
+#define GRID_OVERLAP_TOLERANCE 3
 #define NEIGHBOURHOOD_RADIUS 1
 
 #define TAGGING_RADIUS 1
@@ -25,19 +25,19 @@
 #define CACHE_FILE "colours_cache.txt"
 
 #define BOUNDARY_X 1000.0f
-#define BOUNDARY_Y 400.0f
+#define BOUNDARY_Y 500.0f
 #define PADDING 10 * NEIGHBOURHOOD_RADIUS
-#define TIME_STEP 0.005f
-#define ITERATIONS_PER_DRAW 2
+#define TIME_STEP 0.010f
+#define ITERATIONS_PER_DRAW 5
 #define GRID_CALCULATIONS_PER_ITER 3
 
 #define MAGNIFICATION 1.5f
 
-#define THREADS_X 6
+#define THREADS_X 10
 #define THREADS_Y 5
 
 // #define DEBUG_MODE true
-#define PERFORMANCE_DEBUG_MODE
+// #define PERFORMANCE_DEBUG_MODE
 
 /*
 step took: 0.063394ms
@@ -305,7 +305,7 @@ void handle_collision_grid_iterate_grid(float *pos, const unsigned int *grid, co
 {
     int ids_in_range[(1 + 2 * NEIGHBOURHOOD_RADIUS) * (1 + 2 * NEIGHBOURHOOD_RADIUS) * GRID_OVERLAP_TOLERANCE];
     int particles_in_range = 0;
-    for (int i = -NEIGHBOURHOOD_RADIUS; i <= NEIGHBOURHOOD_RADIUS; i++)
+    for (int i = -0; i <= NEIGHBOURHOOD_RADIUS; i++)
     {
         for (int j = -NEIGHBOURHOOD_RADIUS; j <= NEIGHBOURHOOD_RADIUS; j++)
         {
