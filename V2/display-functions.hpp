@@ -1,2 +1,4 @@
 #pragma once
-void display_test();
+#include<SFML/Graphics.hpp>
+
+void display_test(sf::RenderWindow& window);
