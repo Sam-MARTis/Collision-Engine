@@ -93,8 +93,8 @@ int main()
 
     srand(time(NULL));
     sf::ContextSettings settings;
-    settings.antialiasingLevel = 16;
-    sf::RenderWindow window(sf::VideoMode(1600, 1600), "First window", sf::Style::Default, settings);
+    settings.antiAliasingLevel = 16;
+    sf::RenderWindow window(sf::VideoMode({1600u, 1600u}), "First window", sf::Style::Titlebar | sf::Style::Close, settings);
 
     // long listLen = sizeof(agentList);
 

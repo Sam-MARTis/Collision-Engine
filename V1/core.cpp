@@ -7,6 +7,7 @@
 #include <fstream>
 #include <chrono>
 #include <thread>
+#include <variant>
 
 #define DEFAULT_PARTICLE_COUNT 10000
 #define DIMENSIONS 2
@@ -112,9 +113,9 @@ sf::Color hueToColor(float hueDegrees)
     }
 
     return sf::Color(
-        static_cast<sf::Uint8>((r + m) * 255),
-        static_cast<sf::Uint8>((g + m) * 255),
-        static_cast<sf::Uint8>((b + m) * 255));
+        static_cast<std::uint8_t>((r + m) * 255),
+        static_cast<std::uint8_t>((g + m) * 255),
+        static_cast<std::uint8_t>((b + m) * 255));
 }
 
 struct Timer
@@ -444,7 +445,7 @@ void renderParticles(sf::RenderWindow &window, sf::CircleShape *points, const fl
 {
     for (int i = 0; i < particle_count; i++)
     {
-        points[i].setPosition(pos[2 * i] * MAGNIFICATION, pos[2 * i + 1] * MAGNIFICATION);
+        points[i].setPosition({pos[2 * i] * MAGNIFICATION, pos[2 * i + 1] * MAGNIFICATION});
         window.draw(points[i]);
     }
 }
@@ -523,8 +524,11 @@ int main(int argc, char **argv)
     */
 
     sf::ContextSettings settings;
-    settings.antialiasingLevel = 16;
-    sf::RenderWindow window(sf::VideoMode((int)round(BOUNDARY_X * MAGNIFICATION), (int)round(BOUNDARY_Y * MAGNIFICATION)), "First window", sf::Style::Default, settings);
+    settings.antiAliasingLevel = 16;
+    auto window = sf::RenderWindow(
+        sf::VideoMode({(unsigned int)round(BOUNDARY_X * MAGNIFICATION), (unsigned int)round(BOUNDARY_Y * MAGNIFICATION)}),
+        "First window"
+    );
     window.setVerticalSyncEnabled(true);
 
     bool dragging = false;
@@ -546,32 +550,39 @@ int main(int argc, char **argv)
         }
 
         window.display();
-        sf::Event event;
 
-        while (window.pollEvent(event))
+        while (auto event = window.pollEvent())
         {
-            if ((event.type == sf::Event::MouseButtonPressed) &&
-                (event.mouseButton.button == sf::Mouse::Left))
-                dragging = true;
-            if ((event.type == sf::Event::MouseButtonReleased) &&
-                (event.mouseButton.button == sf::Mouse::Left))
-                dragging = false;
-
-            if (dragging)
+            if (event->is<sf::Event::MouseButtonPressed>())
             {
-                // std::cout<<"Dragging now"<<std::endl;
-                sf::Vector2f mouseCoords = window.mapPixelToCoords(sf::Mouse::getPosition(window));
-                mouseCoords.x *= 1.0f / MAGNIFICATION;
-                mouseCoords.y *= 1.0f / MAGNIFICATION;
-                tagParticles(mouseCoords, pcol, pshapes, spatial_grid, GRID_CELLS_COUNT_X, GRID_CELLS_COUNT_Y, GRID_CELL_DX, GRID_CELL_DY);
+                if (auto* ev = event->getIf<sf::Event::MouseButtonPressed>())
+                {
+                    if (ev->button == sf::Mouse::Button::Left)
+                        dragging = true;
+                }
             }
-
-            if (event.type == sf::Event::Closed)
+            if (event->is<sf::Event::MouseButtonReleased>())
+            {
+                if (auto* ev = event->getIf<sf::Event::MouseButtonReleased>())
+                {
+                    if (ev->button == sf::Mouse::Button::Left)
+                        dragging = false;
+                }
+            }
+            if (event->is<sf::Event::Closed>())
             {
 #ifdef CACHE_COLOURS
                 cacheColours(pcol, particle_count, CACHE_FILE);
 #endif
                 window.close();
+            }
+
+            if (dragging)
+            {
+                sf::Vector2f mouseCoords = window.mapPixelToCoords(sf::Mouse::getPosition(window));
+                mouseCoords.x *= 1.0f / MAGNIFICATION;
+                mouseCoords.y *= 1.0f / MAGNIFICATION;
+                tagParticles(mouseCoords, pcol, pshapes, spatial_grid, GRID_CELLS_COUNT_X, GRID_CELLS_COUNT_Y, GRID_CELL_DX, GRID_CELL_DY);
             }
         }
     }
