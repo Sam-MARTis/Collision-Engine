@@ -85,3 +85,4 @@ void ParticleSystem::draw(sf::RenderTarget& target, sf::RenderStates states) con
     states.texture = &particle_texture;
     target.draw(particle_vertices, states);
 }
+

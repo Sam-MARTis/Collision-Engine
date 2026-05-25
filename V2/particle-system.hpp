@@ -20,10 +20,13 @@ private:
     sf::VertexArray         particle_vertices;
     sf::Texture                     particle_texture;
     unsigned int                    particle_count;
-
+    float                  dt;
 public:
     ParticleSystem(unsigned int count);
     void resetParticlesRandom();
     void updateVerticesPositionFromCache();
     void setupRendering();
+    void addGravitationalAcceleration();
+    void stepForwardTime();
+    void setDt(float deltat);
 };

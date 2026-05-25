@@ -10,9 +10,10 @@ int main(){
     sf::RenderWindow window = sf::RenderWindow(
         sf::VideoMode({WINDOW_SIZE_X, WINDOW_SIZE_Y}), "Particle collision sim"
     );
+    window.setFramerateLimit(60);
     
 
-    ParticleSystem particles(100);
+    ParticleSystem particles(PARTICLE_COUNT);
     particles.setScale(sf::Vector2f({WINDOW_SIZE_X/2, WINDOW_SIZE_Y/2}));
     particles.resetParticlesRandom();
     particles.setupRendering();
@@ -27,6 +28,9 @@ int main(){
         // display_test(window);
         window.draw(particles);
         window.display();
-        
+        particles.addGravitationalAcceleration();
+        particles.stepForwardTime();
+        particles.updateVerticesPositionFromCache();
+
     }
 }
