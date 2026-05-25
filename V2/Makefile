@@ -15,13 +15,15 @@ AUX_SRC = aux.cpp
 CORE_SRC = core-functions.cpp
 DISPLAY_SRC = display-functions.cpp
 
-HEADERS = display-functions.hpp constants.hpp aux.hpp core-functions.hpp
+HEADERS = display-functions.hpp constants.hpp aux.hpp core-functions.hpp particle-system.hpp
 
 .PHONY: all clean help
 
 all: $(TARGETS)
 
-SOURCES = $(MAIN_SRC) $(CORE_SRC) $(AUX_SRC) $(DISPLAY_SRC) 
+# SOURCES = $(MAIN_SRC) $(CORE_SRC) $(AUX_SRC) $(DISPLAY_SRC) 
+SOURCES = main.cpp core-functions.cpp aux.cpp display-functions.cpp 
+
 
 
 
