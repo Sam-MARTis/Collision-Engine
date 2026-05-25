@@ -14,7 +14,9 @@ int main(){
     
 
     ParticleSystem particles(PARTICLE_COUNT);
-    particles.setScale(sf::Vector2f({WINDOW_SIZE_X/2, WINDOW_SIZE_Y/2}));
+    // particles.setScale()
+    particles.setScale(sf::Vector2f({WINDOW_SIZE_X/2, -WINDOW_SIZE_Y/2}));
+    particles.setOrigin(sf::Vector2f({-0.5f, 1.5f}));
     particles.resetParticlesRandom();
     particles.setupRendering();
     while(window.isOpen()){
