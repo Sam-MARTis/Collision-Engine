@@ -17,14 +17,14 @@ void display_test(sf::RenderWindow& window){
         float y = pos[2*i + 1];
 
         // Triangle 1
-        va[6*i + 0] = {{x-r, y-r}, sf::Color::White, {0.f,  0.f }};
-        va[6*i + 1] = {{x-r, y+r}, sf::Color::White, {0.f,  fth }};
-        va[6*i + 2] = {{x+r, y-r}, sf::Color::White, {ftw,  0.f }};
+        va[6*i + 0] = {{x-r, y-r}, sf::Color::White, {0.f,  0.f }}; // Top left
+        va[6*i + 1] = {{x-r, y+r}, sf::Color::White, {0.f,  fth }}; // Bottom left
+        va[6*i + 2] = {{x+r, y-r}, sf::Color::White, {ftw,  0.f }}; // Top right
 
         // Triangle 2
-        va[6*i + 3] = {{x-r, y+r}, sf::Color::White, {0.f,  fth }};
-        va[6*i + 4] = {{x+r, y+r}, sf::Color::White, {ftw,  fth }};
-        va[6*i + 5] = {{x+r, y-r}, sf::Color::White, {ftw,  0.f }};
+        va[6*i + 3] = {{x-r, y+r}, sf::Color::White, {0.f,  fth }}; // Bottom left
+        va[6*i + 4] = {{x+r, y+r}, sf::Color::White, {ftw,  fth }}; // bottom right
+        va[6*i + 5] = {{x+r, y-r}, sf::Color::White, {ftw,  0.f }}; // Top right
     }
 
     sf::RenderStates states;
