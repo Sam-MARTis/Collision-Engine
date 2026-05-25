@@ -1,5 +1,5 @@
 #include <SFML/Graphics.hpp>
-
+#include <math.h>
 #include "particle-system.hpp"
 #include "constants.hpp"
 #include <random>
@@ -7,9 +7,24 @@
 
 ParticleSystem::ParticleSystem(unsigned int count) : particle_vertices(sf::PrimitiveType::Triangles, 6 * count), particle_dynamics(count), particle_count(count), particle_texture("circle.png") {
     dt = DT;
+    grid_cols = ceil(1.0f/(2.0f*PARTICLE_RADIUS)) +2;
+    grid_rows = ceil(1.0f/(2.0f*PARTICLE_RADIUS)) +2;
+    collision_grid.assign(grid_cols*grid_rows, std::vector<unsigned int>());
+    for(auto& cell: collision_grid){
+        cell.reserve((size_t)RESERVE_UNITS_PER_COLLISION_GRID_CELL);
+    }
 };
 
+void ParticleSystem::resetCollisionGrid(){
+    for(auto& cell: collision_grid){
+        cell.clear();
+    }
+};
 
+void ParticleSystem::updateParticlesIndicesInCollisionGrid(){
+    resetCollisionGrid();
+
+}
 void ParticleSystem::resetParticlesRandom()
 {
     static std::random_device rd;

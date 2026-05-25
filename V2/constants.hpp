@@ -5,6 +5,8 @@
 #define WINDOW_SIZE_X 600
 #define WINDOW_SIZE_Y 600
 
+// Computational constants
+#define RESERVE_UNITS_PER_COLLISION_GRID_CELL 1
 
 
 // Physics constants
