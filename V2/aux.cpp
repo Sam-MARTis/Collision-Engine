@@ -51,9 +51,13 @@ void ParticleSystem::addParticles(std::vector<sf::Vector2f> poss, std::vector<sf
         if(run_mode ==1){
             if(i < num_colour_ids_in_cache){
                 particle_color = colour_id_mapping[i];
-            }else{
+            }
+            #ifdef WARN_ABOUT_COLOUR_CACHE_CROSSING
+            else{
+                
                 std::cout << "Warning, particle index " << i << " does not have a corresponding colour in the cache, using default colour instead\n";
             }
+            #endif
         }
         particle_vertices[6 * i + 0] = {{x - r, y - r}, particle_color, {0.f, 0.f}}; // Top left
         particle_vertices[6 * i + 1] = {{x - r, y + r}, particle_color, {0.f, fth}}; // Bottom left

@@ -24,8 +24,8 @@
 
 
 // Image rendering constants
-#define DEFAULT_IMAGE_REFERENCE_PATH "reference_image.png"
-#define DEFAULT_IDS_COLOUR_CACHE_PATH "ids_colour_cache.png"
+#define DEFAULT_IMAGE_REFERENCE_PATH ((std::string)"reference_image.png")
+#define DEFAULT_IDS_COLOUR_CACHE_PATH ((std::string)"ids_colour_cache.txt")
 // Also, use in mode 0 for not doing anything, mode 1 for writing to cache, mode 2 for reading from cache
 
 #define DEFAULT_COLOUR_FOR_UNASSIGNED_ID sf::Color::Blue
@@ -33,3 +33,4 @@
 
 // Debug constants
 // #define CHECK_GRID_UPDATE_PARTICLE_INDICES_FOR_BOUNDS
+// #define WARN_ABOUT_COLOUR_CACHE_CROSSING

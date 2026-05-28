@@ -12,6 +12,7 @@
 ParticleSystem::ParticleSystem(unsigned int count, int run_mode) : particle_vertices(sf::PrimitiveType::Triangles, 6 * count), particle_dynamics(count), particle_count(count), particle_texture("circle.png"), run_mode(run_mode)
 {
     assert(run_mode ==0);
+
     dt = DT;
     grid_cols = ceil(1.0f / (2.0f * PARTICLE_RADIUS)) + 4; // +1 for covering all non-divisible cases, +2 for ghost cell padding
     grid_rows = ceil(1.0f / (2.0f * PARTICLE_RADIUS)) + 4; // Square for now
@@ -36,9 +37,11 @@ ParticleSystem::ParticleSystem(unsigned int count, int run_mode, std::string& re
     if(run_mode == 1){
         ids_colour_cache_path = reference_path;
         reference_image_path = DEFAULT_IMAGE_REFERENCE_PATH;
-        std::ifstream file("input.txt");
+        // std::cout <<"\n\nFilepath: "<<reference_image_path<<"\n";
+        std::ifstream file(ids_colour_cache_path);
     if (!file.is_open())
-        throw std::runtime_error("Could not open file for reading");
+        throw std::runtime_error("Could not open file for reading in particlesystem initialization");
+
 
     float radius_of_cached_data;
     file >> num_colour_ids_in_cache >> radius_of_cached_data;

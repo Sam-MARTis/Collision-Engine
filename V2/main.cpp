@@ -9,12 +9,16 @@
 int run_mode = 0;
 int main(int argc, char *argv[])
 {
+    std::string reference_path; 
     if(argc>1){
         std::string mode_arg = argv[1];
         if(mode_arg == "1"){
             run_mode = 1;
+            argc>2?reference_path = argv[2]: reference_path = DEFAULT_IDS_COLOUR_CACHE_PATH;
+
         }else if(mode_arg == "2"){
             run_mode = 2;
+            argc>2?reference_path = argv[2]: reference_path = DEFAULT_IMAGE_REFERENCE_PATH;
         }else if (mode_arg=="0")
         {
             run_mode = 0;
@@ -40,8 +44,13 @@ int main(int argc, char *argv[])
         std::cout << "Threads in parallel region: " << omp_get_num_threads() << "\n";
     }
     window.setFramerateLimit(144);
-
-    ParticleSystem particles(PARTICLE_COUNT, run_mode);
+    // if(run_mode==0){
+    //     ParticleSystem particles(PARTICLE_COUNT, run_mode);
+    // }else{
+    //     ParticleSystem particles(PARTICLE_COUNT, run_mode, reference_path);
+    // // }
+    // ParticleSystem 1==1? particles()
+    ParticleSystem particles = run_mode==0? ParticleSystem({PARTICLE_COUNT, run_mode}): ParticleSystem({PARTICLE_COUNT, run_mode, reference_path});
     // particles.setScale()
     const float fraction_of_window_covered_by_particle_system = 0.8f;
     particles.setScale(sf::Vector2f({WINDOW_SIZE_X * fraction_of_window_covered_by_particle_system, -WINDOW_SIZE_Y * fraction_of_window_covered_by_particle_system}));
