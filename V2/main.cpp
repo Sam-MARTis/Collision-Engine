@@ -16,8 +16,9 @@ int main(){
 
     ParticleSystem particles(PARTICLE_COUNT);
     // particles.setScale()
-    particles.setScale(sf::Vector2f({WINDOW_SIZE_X/2, -WINDOW_SIZE_Y/2}));
-    particles.setOrigin(sf::Vector2f({-0.5f, 1.5f}));
+    const float fraction_of_window_covered_by_particle_system = 0.8f;
+    particles.setScale(sf::Vector2f({WINDOW_SIZE_X * fraction_of_window_covered_by_particle_system, -WINDOW_SIZE_Y * fraction_of_window_covered_by_particle_system}));
+    particles.setOrigin(sf::Vector2f({-(1-fraction_of_window_covered_by_particle_system)/2, (3-fraction_of_window_covered_by_particle_system)/2}));
     particles.resetParticlesRandom();
     particles.setupRendering();
     while(window.isOpen()){
@@ -31,9 +32,11 @@ int main(){
         // display_test(window);
         window.draw(particles);
         window.display();
-        particles.addGravitationalAcceleration();
-        particles.stepForwardTime();
-        particles.solveCollisions(10, 100);
+        for(int i=0; i<COMPUTE_PER_RENDER; i++){
+            particles.addGravitationalAcceleration();
+            particles.stepForwardTime();
+            particles.solveCollisions(COLLISIO_GLOBAL_NUM_ITERATIONS, COLLISION_CELL_NUM_ITERATIONS);
+        }
         particles.updateVerticesPositionFromCache();
 
     }
