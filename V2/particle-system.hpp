@@ -28,6 +28,8 @@ private:
     std::vector<std::vector<unsigned int>> collision_grid;
     inline int flattenCoords(int i, int j);
     inline float sfVectorNormSq(const sf::Vector2f& vec);
+    void updateParticlesIndicesInCollisionGrid(); //Note, this will call reset on its own
+    void handleCollisionsFromUpdatedGrid(const int& num_global_iterations, const int& num_cell_iterations);
 public:
     ParticleSystem(unsigned int count);
     void resetParticlesRandom();
@@ -35,7 +37,6 @@ public:
     void setupRendering();
     void addGravitationalAcceleration();
     void stepForwardTime();
+    void solveCollisions(const int collision_num_global_iterations, const int collision_num_cell_iterations);
     void setDt(float deltat);
-    void updateParticlesIndicesInCollisionGrid(); //Note, this will call reset on its own
-    void handleCollisions(int num_global_iterations, int num_cell_iterations);
 };

@@ -32,6 +32,7 @@ int main(){
         window.display();
         particles.addGravitationalAcceleration();
         particles.stepForwardTime();
+        particles.solveCollisions(10, 100);
         particles.updateVerticesPositionFromCache();
 
     }

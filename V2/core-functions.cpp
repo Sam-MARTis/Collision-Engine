@@ -2,6 +2,7 @@
 #include <math.h>
 #include "particle-system.hpp"
 #include "constants.hpp"
+#include "aux.hpp"
 #include <random>
 #include <iostream>
 
@@ -9,8 +10,8 @@
 
 ParticleSystem::ParticleSystem(unsigned int count) : particle_vertices(sf::PrimitiveType::Triangles, 6 * count), particle_dynamics(count), particle_count(count), particle_texture("circle.png") {
     dt = DT;
-    grid_cols = ceil(1.0f/(2.0f*PARTICLE_RADIUS)) +1 + 2; // +1 for covering all non-divisible cases, +2 for ghost cell padding
-    grid_rows = ceil(1.0f/(2.0f*PARTICLE_RADIUS)) +1 + 2; // Square for now
+    grid_cols = ceil(1.0f/(2.0f*PARTICLE_RADIUS)) +1+ 3; // +1 for covering all non-divisible cases, +2 for ghost cell padding
+    grid_rows = ceil(1.0f/(2.0f*PARTICLE_RADIUS)) +1+ 3; // Square for now
     collision_grid.assign(grid_cols*grid_rows, std::vector<unsigned int>());
     for(auto& cell: collision_grid){
         cell.reserve((size_t)RESERVE_UNITS_PER_COLLISION_GRID_CELL);
@@ -21,7 +22,6 @@ void ParticleSystem::resetCollisionGrid(){
     for(auto& cell: collision_grid){
         cell.clear();
     }
-
 };
 // inline sf::Vector2i getIndexFromPosition()
 sf::Vector2i ParticleSystem::obtainIndexCoordsFromPosition(sf::Vector2f pos){
@@ -50,12 +50,15 @@ void ParticleSystem::updateParticlesIndicesInCollisionGrid(){
             }
             // if((particle_indices.x >= grid_cols-1) || (particle_indices.y >= ))
         #endif
+        collision_grid[flattenCoords(particle_indices.x, particle_indices.y)].push_back(i);
     }
 }
 
 
-void ParticleSystem::handleCollisions(int num_global_iterations, int num_cell_iterations){
-    for(int global_iter_count=0; global_iter_count<num_global_iterations; global_iter_count++){
+void ParticleSystem::handleCollisionsFromUpdatedGrid(const int& num_global_iterations, const int& num_cell_iterations){
+    bool something_done_in_this_global_iteration = true;
+    for(int global_iter_count=0; (global_iter_count<num_global_iterations) && something_done_in_this_global_iteration; global_iter_count++){
+    bool something_done_in_this_cell_iteration = false;
         for(int i=1; i<grid_cols-1; i++){
             for(int j=1; j<grid_rows-2; j++){
                 const int grid_cell_index = flattenCoords(i, j);
@@ -110,11 +113,15 @@ void ParticleSystem::handleCollisions(int num_global_iterations, int num_cell_it
                     }
                     
                 }
+                if(something_done_in_this_cell_iteration) something_done_in_this_global_iteration=true;
             }
         }
     }
 }
-
+void ParticleSystem::solveCollisions(const int collision_num_global_iterations, const int collision_num_cell_iterations){
+    updateParticlesIndicesInCollisionGrid();
+    handleCollisionsFromUpdatedGrid(collision_num_global_iterations, collision_num_cell_iterations);
+}
 void ParticleSystem::resetParticlesRandom()
 {
     static std::random_device rd;
@@ -153,19 +160,19 @@ void ParticleSystem::stepForwardTime(){
         // }else 
         if (cross_bottom_boundary)
         {
-            particle.pos.y = particle.prev_pos.y = 0.0f;
+            particle.pos.y = particle.prev_pos.y = 1e-6f;
         }
         if (cross_top_boundary)
         {
-            particle.pos.y = particle.prev_pos.y = 1.0f;
+            particle.pos.y = particle.prev_pos.y = 1.0f - 1e-6f;
         }
         if (cross_left_boundary)
         {
-            particle.pos.x = particle.prev_pos.x = 0.0f;
+            particle.pos.x = particle.prev_pos.x = 1e-6f;
         }
         if (cross_right_boundary)
         {
-            particle.pos.x = particle.prev_pos.x = 1.0f;
+            particle.pos.x = particle.prev_pos.x = 1.0f - 1e-6f;
         }
         
     }
