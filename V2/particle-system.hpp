@@ -44,7 +44,10 @@ public:
     void solveCollisions(const int collision_num_global_iterations, const int collision_num_cell_iterations);
     void setDt(float deltat);
     void addParticle(sf::Vector2f pos, sf::Vector2f vel);
+    void addParticles(std::vector<sf::Vector2f> poss, std::vector<sf::Vector2f> vels);
+
     float getNumParticles(){
         return particle_count;
     }
+    
 };

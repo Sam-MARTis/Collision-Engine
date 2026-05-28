@@ -61,12 +61,23 @@ int main()
             }
         }
         
-        if(add_time>time_to_add_particles){
+        if((add_time>time_to_add_particles) && (particles.getNumParticles() < MAX_PARTICLES)){
+   
+            std::vector<sf::Vector2f> poss;
+            std::vector<sf::Vector2f> vels;
+            poss.reserve(NUM_PARTICLES_TO_ADD_EVERY_TIME);
+            vels.reserve(NUM_PARTICLES_TO_ADD_EVERY_TIME);
+            
             for(int i = 0; i < NUM_PARTICLES_TO_ADD_EVERY_TIME; i++){
-                particles.addParticle(sf::Vector2f({0.1f, 0.7f + i* 2.4f*PARTICLE_RADIUS}), sf::Vector2f({PARTICLE_ADDING_VELOCITY_X, 0.0f}));
+                
+                poss.push_back(sf::Vector2f({4*PARTICLE_RADIUS, 1.0f -(i+2)* 2.4f*PARTICLE_RADIUS}));
+                vels.push_back(sf::Vector2f({PARTICLE_ADDING_VELOCITY_X, 0.0f}));
+                // particles.addParticle(sf::Vector2f({0.1f, 0.7f + i* 2.4f*PARTICLE_RADIUS}), sf::Vector2f({PARTICLE_ADDING_VELOCITY_X, 0.0f}));
                 // particles.addParticle(sf::Vector2f({0.1f, 0.82f}), sf::Vector2f({6.1f, 0.0f}));
                 // particles.addParticle(sf::Vector2f({0.1f, 0.78f}), sf::Vector2f({6.1f, 0.0f}));
+                
             }
+            particles.addParticles(poss, vels);
             add_time -= time_to_add_particles;
         }
         // std::cout << "Sim time: " << sim_time << ", Add time: " << add_time << "\n";

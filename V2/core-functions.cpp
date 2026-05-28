@@ -17,6 +17,7 @@ ParticleSystem::ParticleSystem(unsigned int count) : particle_vertices(sf::Primi
     {
         cell.reserve((size_t)RESERVE_UNITS_PER_COLLISION_GRID_CELL);
     }
+    particle_dynamics.reserve(MAX_PARTICLES);
 };
 
 
