@@ -19,13 +19,7 @@ ParticleSystem::ParticleSystem(unsigned int count) : particle_vertices(sf::Primi
     }
 };
 
-void ParticleSystem::resetCollisionGrid()
-{
-    for (auto &cell : collision_grid)
-    {
-        cell.clear();
-    }
-};
+
 // inline sf::Vector2i getIndexFromPosition()
 sf::Vector2i ParticleSystem::obtainIndexCoordsFromPosition(sf::Vector2f pos)
 {
