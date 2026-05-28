@@ -43,4 +43,8 @@ public:
     void stepForwardTime();
     void solveCollisions(const int collision_num_global_iterations, const int collision_num_cell_iterations);
     void setDt(float deltat);
+    void addParticle(sf::Vector2f pos, sf::Vector2f vel);
+    float getNumParticles(){
+        return particle_count;
+    }
 };

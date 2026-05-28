@@ -20,7 +20,7 @@ ParticleSystem::ParticleSystem(unsigned int count) : particle_vertices(sf::Primi
 };
 
 
-// inline sf::Vector2i getIndexFromPosition()
+
 sf::Vector2i ParticleSystem::obtainIndexCoordsFromPosition(sf::Vector2f pos)
 {
     const int x_coord = ceil((pos.x) / (2.0f * PARTICLE_RADIUS)) + 2;
@@ -30,10 +30,6 @@ sf::Vector2i ParticleSystem::obtainIndexCoordsFromPosition(sf::Vector2f pos)
 void ParticleSystem::updateParticlesIndicesInCollisionGrid()
 {
     resetCollisionGrid();
-    /*
-    Ok so we gotta choose how we're representing the grid positioning.
-    So the 0, 0 coordinate will be the center of the first grid cell
-    */
     for (int i = 0; i < particle_count; i++)
     {
         sf::Vector2i particle_indices = obtainIndexCoordsFromPosition(particle_dynamics[i].pos);
@@ -255,22 +251,7 @@ void ParticleSystem::solveCollisions(const int collision_num_global_iterations, 
     updateParticlesIndicesInCollisionGrid();
     handleCollisionsFromUpdatedGridParallel(collision_num_global_iterations, collision_num_cell_iterations);
 }
-void ParticleSystem::resetParticlesRandom()
-{
-    // static std::random_device rd;
-    static std::mt19937 rng(42);
 
-    for (int i = 0; i < particle_count; i++)
-    {
-        const float rand_val1 = std::uniform_real_distribution(0.0f, 1.0f)(rng);
-        const float rand_val2 = std::uniform_real_distribution(0.0f, 1.0f)(rng);
-        ParticleKinematics &particle = particle_dynamics[i];
-        particle.pos.x = rand_val1;
-        particle.pos.y = rand_val2;
-        particle.prev_pos.x = rand_val1;
-        particle.prev_pos.y = rand_val2;
-    }
-}
 
 void ParticleSystem::addGravitationalAcceleration()
 {

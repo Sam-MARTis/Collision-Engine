@@ -21,7 +21,7 @@ int main()
 #pragma omp single // print only once
         std::cout << "Threads in parallel region: " << omp_get_num_threads() << "\n";
     }
-    window.setFramerateLimit(60);
+    window.setFramerateLimit(144);
 
     ParticleSystem particles(PARTICLE_COUNT);
     // particles.setScale()
@@ -30,6 +30,9 @@ int main()
     particles.setOrigin(sf::Vector2f({-(1 - fraction_of_window_covered_by_particle_system) / 2, (3 - fraction_of_window_covered_by_particle_system) / 2}));
     particles.resetParticlesRandom();
     particles.setupRendering();
+    float sim_time = 0;
+    float add_time = 0;
+    const float time_to_add_particles = 3*PARTICLE_RADIUS / PARTICLE_ADDING_VELOCITY_X;
     while (window.isOpen())
     {
 
@@ -38,6 +41,9 @@ int main()
             if (event->is<sf::Event::Closed>())
             {
                 window.close();
+            }
+            if (event->is<sf::Event::MouseButtonPressed>()){
+                std::cout << "Number of particles before adding: " << particles.getNumParticles() << "\n";
             }
         }
         window.clear();
@@ -49,7 +55,21 @@ int main()
             particles.addGravitationalAcceleration();
             particles.stepForwardTime();
             particles.solveCollisions(COLLISIO_GLOBAL_NUM_ITERATIONS, COLLISION_CELL_NUM_ITERATIONS);
+            sim_time += DT;
+            if(sim_time>0.1){
+                add_time += DT;
+            }
         }
+        
+        if(add_time>time_to_add_particles){
+            for(int i = 0; i < NUM_PARTICLES_TO_ADD_EVERY_TIME; i++){
+                particles.addParticle(sf::Vector2f({0.1f, 0.7f + i* 2.4f*PARTICLE_RADIUS}), sf::Vector2f({PARTICLE_ADDING_VELOCITY_X, 0.0f}));
+                // particles.addParticle(sf::Vector2f({0.1f, 0.82f}), sf::Vector2f({6.1f, 0.0f}));
+                // particles.addParticle(sf::Vector2f({0.1f, 0.78f}), sf::Vector2f({6.1f, 0.0f}));
+            }
+            add_time -= time_to_add_particles;
+        }
+        // std::cout << "Sim time: " << sim_time << ", Add time: " << add_time << "\n";
         particles.updateVerticesPositionFromCache();
     }
 }
