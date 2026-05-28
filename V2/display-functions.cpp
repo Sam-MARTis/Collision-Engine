@@ -3,6 +3,7 @@
 #include "constants.hpp"
 #include<SFML/Graphics.hpp>
 #include<iostream>
+#include<fstream>
 
 void display_test(sf::RenderWindow& window){
     sf::Texture texture("circle.png");
@@ -102,7 +103,6 @@ void ParticleSystem::ComputeColourIdMapping(){
     if (!reference_image.getSize().x || !reference_image.getSize().y)
         throw std::runtime_error("Could not load reference image for computing colour id mapping");
     auto [img_width, img_height] = reference_image.getSize();
-
     const float fraction_to_fit = 0.8f;
     const float scaling_factor_x = img_width *fraction_to_fit;
     const float scaling_factor_y = img_height*fraction_to_fit;
@@ -127,6 +127,27 @@ void ParticleSystem::ComputeColourIdMapping(){
         for(int j=0; j<6; j++){
              particle_vertices[6*i + j].color = colour_id_mapping[i];
         }
+    }
+}
+void ParticleSystem::cacheColourIdMapping(){
+    std::ofstream file(ids_colour_cache_path);
+    /*
+    THERE IS SOME BUG HERE.
+    why is colour_id_mapping.size() different from particle_count? 
+    The former is showing 0, wtf
+    
+    */
+    std::cout << "Caching colour id mapping to path: " << ids_colour_cache_path << "\n";
+    std::cout << "Number of colour ids being cached: " << colour_id_mapping.size() << "\n";
+    if (!file.is_open())
+        throw std::runtime_error("Could not open file for writing in cacheColourIdMapping");
+    file << particle_count << " " << PARTICLE_RADIUS << "\n";
+    // for(const sf::Color& colour : colour_id_mapping){
+    //     file << (int)colour.r << " " << (int)colour.g << " " << (int)colour.b << "\n";
+    // }
+    for(unsigned int i=0; i<particle_count; i++){
+        const sf::Color& colour = particle_vertices[6*i].color; // All 6 vertices of a particle have the same colour, so just take the first one
+        file << (int)colour.r << " " << (int)colour.g << " " << (int)colour.b << "\n";
     }
 }
 
