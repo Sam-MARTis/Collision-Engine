@@ -10,8 +10,8 @@
 
 ParticleSystem::ParticleSystem(unsigned int count) : particle_vertices(sf::PrimitiveType::Triangles, 6 * count), particle_dynamics(count), particle_count(count), particle_texture("circle.png") {
     dt = DT;
-    grid_cols = ceil(1.0f/(2.0f*PARTICLE_RADIUS)) +1+ 3; // +1 for covering all non-divisible cases, +2 for ghost cell padding
-    grid_rows = ceil(1.0f/(2.0f*PARTICLE_RADIUS)) +1+ 3; // Square for now
+    grid_cols = ceil(1.0f/(2.0f*PARTICLE_RADIUS)) +4; // +1 for covering all non-divisible cases, +2 for ghost cell padding
+    grid_rows = ceil(1.0f/(2.0f*PARTICLE_RADIUS)) +4; // Square for now
     collision_grid.assign(grid_cols*grid_rows, std::vector<unsigned int>());
     for(auto& cell: collision_grid){
         cell.reserve((size_t)RESERVE_UNITS_PER_COLLISION_GRID_CELL);
@@ -25,8 +25,8 @@ void ParticleSystem::resetCollisionGrid(){
 };
 // inline sf::Vector2i getIndexFromPosition()
 sf::Vector2i ParticleSystem::obtainIndexCoordsFromPosition(sf::Vector2f pos){
-    const int x_coord = ceil((pos.x + PARTICLE_RADIUS)/(2.0f*PARTICLE_RADIUS)) + 1;
-    const int y_coord = ceil((pos.y + PARTICLE_RADIUS)/(2.0f*PARTICLE_RADIUS)) + 1;
+    const int x_coord = ceil((pos.x)/(2.0f*PARTICLE_RADIUS)) + 2;
+    const int y_coord = ceil((pos.y)/(2.0f*PARTICLE_RADIUS)) + 2;
     return sf::Vector2i({x_coord, y_coord});
     
 }
@@ -45,7 +45,9 @@ void ParticleSystem::updateParticlesIndicesInCollisionGrid(){
             const bool too_down = particle_indices.y <1;
             if(too_left + too_right + too_up + too_down > 0){
                 std::cout<<"Error in bounds during updateParticlesIndicesInCollisionGrid bounds check\n";
-                std::cout<<"Particle indices: "<<i<<", pos: "<<particle_dynamics[i].pos.x<<", "<<particle_dynamics[i].pos.x<<"\n";
+                std::cout<<"Particle indices:\n"<<i<<", pos: "<<particle_dynamics[i].pos.x<<", "<<particle_dynamics[i].pos.y<<"\n";
+                std::cout<<"indices: "<<particle_indices.x<<", "<<particle_indices.y<<"\n";
+                std::cout<<"Grid size: "<<grid_cols<<"(cols), "<<grid_rows<<"(rows)\n";
                 std::cout<<"Checks(right, left, up, down respectively): "<<too_right<<", "<<too_left<<", "<<too_up<<", "<<too_down<<"\n";
             }
             // if((particle_indices.x >= grid_cols-1) || (particle_indices.y >= ))
@@ -60,7 +62,7 @@ void ParticleSystem::handleCollisionsFromUpdatedGrid(const int& num_global_itera
     for(int global_iter_count=0; (global_iter_count<num_global_iterations) && something_done_in_this_global_iteration; global_iter_count++){
     bool something_done_in_this_cell_iteration = false;
         for(int i=1; i<grid_cols-1; i++){
-            for(int j=1; j<grid_rows-2; j++){
+            for(int j=1; j<grid_rows-1; j++){
                 const int grid_cell_index = flattenCoords(i, j);
                 const std::vector<unsigned int>& particles_in_this_cell = collision_grid[grid_cell_index];
                 if(particles_in_this_cell.size()==0) continue;
@@ -124,8 +126,8 @@ void ParticleSystem::solveCollisions(const int collision_num_global_iterations, 
 }
 void ParticleSystem::resetParticlesRandom()
 {
-    static std::random_device rd;
-    static std::mt19937 rng(rd());
+    // static std::random_device rd;
+    static std::mt19937 rng(42);
 
     for (int i = 0; i < particle_count; i++)
     {
@@ -148,10 +150,10 @@ void ParticleSystem::stepForwardTime(){
     for(int i=0; i<particle_count; i++){
         ParticleKinematics& particle = particle_dynamics[i];
         const sf::Vector2f new_pos = 2.0f*particle.pos  - particle.prev_pos + particle.acc*dt*dt;
-        const bool cross_right_boundary = new_pos.x>1.0f;
-        const bool cross_left_boundary = new_pos.x < 0.0f;
-        const bool cross_top_boundary = new_pos.y > 1.0f;
-        const bool cross_bottom_boundary = new_pos.y < 0.0f;
+        const bool cross_right_boundary = new_pos.x>(1.0f - PARTICLE_RADIUS);
+        const bool cross_left_boundary = new_pos.x < PARTICLE_RADIUS;
+        const bool cross_top_boundary = new_pos.y > (1.0f - PARTICLE_RADIUS);
+        const bool cross_bottom_boundary = new_pos.y < PARTICLE_RADIUS;
         particle.prev_pos.x = particle.pos.x;
         particle.prev_pos.y = particle.pos.y;
         particle.pos.x = new_pos.x;
@@ -160,19 +162,19 @@ void ParticleSystem::stepForwardTime(){
         // }else 
         if (cross_bottom_boundary)
         {
-            particle.pos.y = particle.prev_pos.y = 1e-6f;
+            particle.pos.y = particle.prev_pos.y = PARTICLE_RADIUS;
         }
         if (cross_top_boundary)
         {
-            particle.pos.y = particle.prev_pos.y = 1.0f - 1e-6f;
+            particle.pos.y = particle.prev_pos.y = 1.0f - PARTICLE_RADIUS;
         }
         if (cross_left_boundary)
         {
-            particle.pos.x = particle.prev_pos.x = 1e-6f;
+            particle.pos.x = particle.prev_pos.x = PARTICLE_RADIUS;
         }
         if (cross_right_boundary)
         {
-            particle.pos.x = particle.prev_pos.x = 1.0f - 1e-6f;
+            particle.pos.x = particle.prev_pos.x = 1.0f - PARTICLE_RADIUS;
         }
         
     }

@@ -2,6 +2,7 @@
 #include "particle-system.hpp"
 #include"constants.hpp"
 #include"display-functions.hpp"
+#include<random>
 
 
 int main(){
