@@ -3,6 +3,7 @@
 #include <SFML/Graphics.hpp>
 #include <vector>
 #include <random>
+#include "constants.hpp"
 
 class ParticleSystem : public sf::Drawable, public sf::Transformable
 {
@@ -39,8 +40,7 @@ private:
     void handleCollisionsFromUpdatedGrid(const int& num_global_iterations, const int& num_cell_iterations);
     void handleCollisionsFromUpdatedGridParallel(const int& num_global_iterations, const int& num_cell_iterations);
 public:
-    ParticleSystem(unsigned int count, int run_mode);
-    ParticleSystem(unsigned int count, int run_mode, std::string& reference_path);
+    ParticleSystem(unsigned int count, int run_mode, const std::string& cache_path, const std::string& reference_path);
     void resetParticlesRandom();
     void updateVerticesPositionFromCache();
     void setupRendering();
@@ -49,7 +49,8 @@ public:
     void solveCollisions(const int collision_num_global_iterations, const int collision_num_cell_iterations);
     void setDt(float deltat);
     void addParticles(std::vector<sf::Vector2f> poss, std::vector<sf::Vector2f> vels);
-
+    void ComputeColourIdMapping();
+    void cacheColourIdMapping();
     float getNumParticles(){
         return particle_count;
     }

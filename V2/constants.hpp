@@ -1,7 +1,7 @@
 #pragma once
-#define PARTICLE_RADIUS 3e-3f
+#define PARTICLE_RADIUS 4e-3f
 #define PARTICLE_COUNT 0
-#define MAX_PARTICLES 30000
+#define MAX_PARTICLES 18000
 
 #define WINDOW_SIZE_X 1000
 #define WINDOW_SIZE_Y 1000
