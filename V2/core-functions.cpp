@@ -6,9 +6,12 @@
 #include <random>
 #include <iostream>
 #include <omp.h>
+#include <fstream>
+#include <string>
 
-ParticleSystem::ParticleSystem(unsigned int count) : particle_vertices(sf::PrimitiveType::Triangles, 6 * count), particle_dynamics(count), particle_count(count), particle_texture("circle.png")
+ParticleSystem::ParticleSystem(unsigned int count, int run_mode) : particle_vertices(sf::PrimitiveType::Triangles, 6 * count), particle_dynamics(count), particle_count(count), particle_texture("circle.png"), run_mode(run_mode)
 {
+    assert(run_mode ==0);
     dt = DT;
     grid_cols = ceil(1.0f / (2.0f * PARTICLE_RADIUS)) + 4; // +1 for covering all non-divisible cases, +2 for ghost cell padding
     grid_rows = ceil(1.0f / (2.0f * PARTICLE_RADIUS)) + 4; // Square for now
@@ -16,6 +19,45 @@ ParticleSystem::ParticleSystem(unsigned int count) : particle_vertices(sf::Primi
     for (auto &cell : collision_grid)
     {
         cell.reserve((size_t)RESERVE_UNITS_PER_COLLISION_GRID_CELL);
+    }
+    particle_dynamics.reserve(MAX_PARTICLES);
+};
+ParticleSystem::ParticleSystem(unsigned int count, int run_mode, std::string& reference_path): particle_vertices(sf::PrimitiveType::Triangles, 6 * count), particle_dynamics(count), particle_count(count), particle_texture("circle.png"), run_mode(run_mode)
+{
+    assert(run_mode == 1 || run_mode == 2);
+    dt = DT;
+    grid_cols = ceil(1.0f / (2.0f * PARTICLE_RADIUS)) + 4; // +1 for covering all non-divisible cases, +2 for ghost cell padding
+    grid_rows = ceil(1.0f / (2.0f * PARTICLE_RADIUS)) + 4; // Square for now
+    collision_grid.assign(grid_cols * grid_rows, std::vector<unsigned int>());
+    for (auto &cell : collision_grid)
+    {
+        cell.reserve((size_t)RESERVE_UNITS_PER_COLLISION_GRID_CELL);
+    }
+    if(run_mode == 1){
+        ids_colour_cache_path = reference_path;
+        reference_image_path = DEFAULT_IMAGE_REFERENCE_PATH;
+        std::ifstream file("input.txt");
+    if (!file.is_open())
+        throw std::runtime_error("Could not open file for reading");
+
+    float radius_of_cached_data;
+    file >> num_colour_ids_in_cache >> radius_of_cached_data;
+    if(radius_of_cached_data != PARTICLE_RADIUS){
+        std::cout << "Warning, radius of cached data does not match current particle radius, this might cause issues\n";
+        std::cout << "Radius of cached data: " << radius_of_cached_data << ", current particle radius: " << PARTICLE_RADIUS << "\n";
+    }
+    colour_id_mapping.reserve(num_colour_ids_in_cache);
+    for(int i=0; i<num_colour_ids_in_cache; i++){
+        int r, g, b;
+        file >> r >> g >> b;
+        colour_id_mapping.push_back(sf::Color(r, g, b));
+    }
+
+
+    }else if(run_mode == 2){
+
+        reference_image_path = reference_path;
+        ids_colour_cache_path = DEFAULT_IDS_COLOUR_CACHE_PATH;
     }
     particle_dynamics.reserve(MAX_PARTICLES);
 };

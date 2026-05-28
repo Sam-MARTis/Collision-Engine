@@ -6,8 +6,26 @@
 #include <omp.h>
 #include <iostream>
 
-int main()
+int run_mode = 0;
+int main(int argc, char *argv[])
 {
+    if(argc>1){
+        std::string mode_arg = argv[1];
+        if(mode_arg == "1"){
+            run_mode = 1;
+        }else if(mode_arg == "2"){
+            run_mode = 2;
+        }else if (mode_arg=="0")
+        {
+            run_mode = 0;
+        }
+        else{
+            std::cout << "Invalid mode argument, use 0 for normal run, 1 for writing to cache, 2 for reading from cache\n";
+            return 1;
+        }
+        
+
+    }
     sf::ContextSettings settings;
     settings.antiAliasingLevel = 16;
     sf::RenderWindow window = sf::RenderWindow(
@@ -23,7 +41,7 @@ int main()
     }
     window.setFramerateLimit(144);
 
-    ParticleSystem particles(PARTICLE_COUNT);
+    ParticleSystem particles(PARTICLE_COUNT, run_mode);
     // particles.setScale()
     const float fraction_of_window_covered_by_particle_system = 0.8f;
     particles.setScale(sf::Vector2f({WINDOW_SIZE_X * fraction_of_window_covered_by_particle_system, -WINDOW_SIZE_Y * fraction_of_window_covered_by_particle_system}));

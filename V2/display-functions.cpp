@@ -2,6 +2,7 @@
 #include "particle-system.hpp"
 #include "constants.hpp"
 #include<SFML/Graphics.hpp>
+#include<iostream>
 
 void display_test(sf::RenderWindow& window){
     sf::Texture texture("circle.png");
@@ -52,14 +53,22 @@ void ParticleSystem::setupRendering()
     {
         const float x = particle_dynamics[i].pos.x;
         const float y = particle_dynamics[i].pos.y;
-        particle_vertices[6 * i + 0] = {{x - r, y - r}, sf::Color::White, {0.f, 0.f}}; // Top left
-        particle_vertices[6 * i + 1] = {{x - r, y + r}, sf::Color::White, {0.f, fth}}; // Bottom left
-        particle_vertices[6 * i + 2] = {{x + r, y - r}, sf::Color::White, {ftw, 0.f}}; // Top right
+        sf::Color particle_color = DEFAULT_COLOUR_FOR_UNASSIGNED_ID;
+        if(run_mode ==1){
+            if(i < num_colour_ids_in_cache){
+                particle_color = colour_id_mapping[i];
+            }else{
+                std::cout << "Warning, particle index " << i << " does not have a corresponding colour in the cache, using default colour instead\n";
+            }
+        }
+        particle_vertices[6 * i + 0] = {{x - r, y - r}, particle_color, {0.f, 0.f}}; // Top left
+        particle_vertices[6 * i + 1] = {{x - r, y + r}, particle_color, {0.f, fth}}; // Bottom left
+        particle_vertices[6 * i + 2] = {{x + r, y - r}, particle_color, {ftw, 0.f}}; // Top right
 
         // Triangle 2
-        particle_vertices[6 * i + 3] = {{x - r, y + r}, sf::Color::White, {0.f, fth}}; // Bottom left
-        particle_vertices[6 * i + 4] = {{x + r, y + r}, sf::Color::White, {ftw, fth}}; // bottom right
-        particle_vertices[6 * i + 5] = {{x + r, y - r}, sf::Color::White, {ftw, 0.f}}; // Top right
+        particle_vertices[6 * i + 3] = {{x - r, y + r}, particle_color, {0.f, fth}}; // Bottom left
+        particle_vertices[6 * i + 4] = {{x + r, y + r}, particle_color, {ftw, fth}}; // bottom right
+        particle_vertices[6 * i + 5] = {{x + r, y - r}, particle_color, {ftw, 0.f}}; // Top right
     }
 };
 void ParticleSystem::updateVerticesPositionFromCache()
@@ -85,4 +94,5 @@ void ParticleSystem::draw(sf::RenderTarget& target, sf::RenderStates states) con
     states.texture = &particle_texture;
     target.draw(particle_vertices, states);
 }
+
 
