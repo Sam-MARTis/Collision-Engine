@@ -3,12 +3,14 @@
 #include "particle-system.hpp"
 #include "constants.hpp"
 #include <random>
+#include <iostream>
+
 
 
 ParticleSystem::ParticleSystem(unsigned int count) : particle_vertices(sf::PrimitiveType::Triangles, 6 * count), particle_dynamics(count), particle_count(count), particle_texture("circle.png") {
     dt = DT;
-    grid_cols = ceil(1.0f/(2.0f*PARTICLE_RADIUS)) +2;
-    grid_rows = ceil(1.0f/(2.0f*PARTICLE_RADIUS)) +2;
+    grid_cols = ceil(1.0f/(2.0f*PARTICLE_RADIUS)) +1 + 2; // +1 for covering all non-divisible cases, +2 for ghost cell padding
+    grid_rows = ceil(1.0f/(2.0f*PARTICLE_RADIUS)) +1 + 2; // Square for now
     collision_grid.assign(grid_cols*grid_rows, std::vector<unsigned int>());
     for(auto& cell: collision_grid){
         cell.reserve((size_t)RESERVE_UNITS_PER_COLLISION_GRID_CELL);
@@ -19,12 +21,100 @@ void ParticleSystem::resetCollisionGrid(){
     for(auto& cell: collision_grid){
         cell.clear();
     }
-};
 
+};
+// inline sf::Vector2i getIndexFromPosition()
+sf::Vector2i ParticleSystem::obtainIndexCoordsFromPosition(sf::Vector2f pos){
+    const int x_coord = ceil((pos.x + PARTICLE_RADIUS)/(2.0f*PARTICLE_RADIUS)) + 1;
+    const int y_coord = ceil((pos.y + PARTICLE_RADIUS)/(2.0f*PARTICLE_RADIUS)) + 1;
+    return sf::Vector2i({x_coord, y_coord});
+    
+}
 void ParticleSystem::updateParticlesIndicesInCollisionGrid(){
     resetCollisionGrid();
-
+    /*
+    Ok so we gotta choose how we're representing the grid positioning.
+    So the 0, 0 coordinate will be the center of the first grid cell
+    */
+    for(int i=0; i<particle_count; i++){
+        sf::Vector2i particle_indices = obtainIndexCoordsFromPosition(particle_dynamics[i].pos);
+        #ifdef CHECK_GRID_UPDATE_PARTICLE_INDICES_FOR_BOUNDS
+            const bool too_right = particle_indices.x > grid_cols - 2;
+            const bool too_left = particle_indices.x <1;
+            const bool too_up = particle_indices.y > grid_rows - 2;
+            const bool too_down = particle_indices.y <1;
+            if(too_left + too_right + too_up + too_down > 0){
+                std::cout<<"Error in bounds during updateParticlesIndicesInCollisionGrid bounds check\n";
+                std::cout<<"Particle indices: "<<i<<", pos: "<<particle_dynamics[i].pos.x<<", "<<particle_dynamics[i].pos.x<<"\n";
+                std::cout<<"Checks(right, left, up, down respectively): "<<too_right<<", "<<too_left<<", "<<too_up<<", "<<too_down<<"\n";
+            }
+            // if((particle_indices.x >= grid_cols-1) || (particle_indices.y >= ))
+        #endif
+    }
 }
+
+
+void ParticleSystem::handleCollisions(int num_global_iterations, int num_cell_iterations){
+    for(int global_iter_count=0; global_iter_count<num_global_iterations; global_iter_count++){
+        for(int i=1; i<grid_cols-1; i++){
+            for(int j=1; j<grid_rows-2; j++){
+                const int grid_cell_index = flattenCoords(i, j);
+                const std::vector<unsigned int>& particles_in_this_cell = collision_grid[grid_cell_index];
+                if(particles_in_this_cell.size()==0) continue;
+                int num_surrounding_particles=0;
+                for(int di=-1; di<=1; di++){
+                    for(int dj=-1; dj<=1; dj++){
+                        if((dj!=0) || (di!=0)){
+                        const int idx = flattenCoords(i+di, j+dj);
+                        num_surrounding_particles+=collision_grid[idx].size();
+                        }
+                    }
+                }
+                std::vector<unsigned int> surrounding_particles;
+                surrounding_particles.reserve(num_surrounding_particles);
+                for(int di=-1; di<=1; di++){
+                    for(int dj=-1; dj<=1; dj++){
+                        if((dj!=0) || (di!=0)){
+                        const std::vector<unsigned int>& particles_here = collision_grid[flattenCoords(i+di, j+dj)];
+                        surrounding_particles.insert(surrounding_particles.end(), particles_here.begin(), particles_here.end()); 
+                        }
+                    }
+                }
+                std::vector<unsigned int> all_particles;
+                all_particles.reserve(num_surrounding_particles + particles_in_this_cell.size());
+                all_particles.insert(all_particles.end(), surrounding_particles.begin(), surrounding_particles.end());
+                all_particles.insert(all_particles.end(), particles_in_this_cell.begin(), particles_in_this_cell.end());
+                const float diam_sq = PARTICLE_RADIUS * PARTICLE_RADIUS * 4.0f;
+                bool something_done_in_this_cell_iteration = true;
+                for(int cell_iter_count=0; (cell_iter_count<num_cell_iterations) && something_done_in_this_cell_iteration; cell_iter_count++){
+                    something_done_in_this_cell_iteration = false;
+                    for(const unsigned int& id_self:particles_in_this_cell){
+                        ParticleKinematics& this_particle = particle_dynamics[id_self];
+                        for(unsigned int& id_other:all_particles){
+                            if(id_self!=id_other){
+                                ParticleKinematics& other_particle = particle_dynamics[id_other];
+                                const sf::Vector2f dr = other_particle.pos - this_particle.pos;
+                                const float ds_sq = sfVectorNormSq(dr);
+                                if(ds_sq < diam_sq){
+                                    something_done_in_this_cell_iteration = true;
+                                    const float ds = sqrtf(ds_sq);
+                                    const float inv_ds = 1.0f/(ds);
+                                    const float overlap_each_particle = PARTICLE_RADIUS - ds*0.5f;
+                                    const sf::Vector2f delta = dr * (overlap_each_particle*inv_ds);
+                                    this_particle.pos -= delta;
+                                    other_particle.pos += delta;
+                                }
+
+                            }
+                        }
+                    }
+                    
+                }
+            }
+        }
+    }
+}
+
 void ParticleSystem::resetParticlesRandom()
 {
     static std::random_device rd;

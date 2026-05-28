@@ -14,3 +14,7 @@
 #define DT (1e-3)
 
 
+
+
+// Debug constants
+#define CHECK_GRID_UPDATE_PARTICLE_INDICES_FOR_BOUNDS

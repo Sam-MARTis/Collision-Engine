@@ -16,6 +16,7 @@ private:
 
     void draw(sf::RenderTarget &target, sf::RenderStates states) const override;
     void resetCollisionGrid();
+    sf::Vector2i obtainIndexCoordsFromPosition(sf::Vector2f pos);
 
     std::vector<ParticleKinematics> particle_dynamics;
     sf::VertexArray particle_vertices;
@@ -25,6 +26,8 @@ private:
     unsigned int grid_rows;
     unsigned int grid_cols;
     std::vector<std::vector<unsigned int>> collision_grid;
+    inline int flattenCoords(int i, int j);
+    inline float sfVectorNormSq(const sf::Vector2f& vec);
 public:
     ParticleSystem(unsigned int count);
     void resetParticlesRandom();
@@ -33,5 +36,6 @@ public:
     void addGravitationalAcceleration();
     void stepForwardTime();
     void setDt(float deltat);
-    void updateParticlesIndicesInCollisionGrid(); //Note, this willc all reset on its own
+    void updateParticlesIndicesInCollisionGrid(); //Note, this will call reset on its own
+    void handleCollisions(int num_global_iterations, int num_cell_iterations);
 };
