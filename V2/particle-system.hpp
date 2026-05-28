@@ -28,8 +28,12 @@ private:
     std::vector<std::vector<unsigned int>> collision_grid;
     inline int flattenCoords(int i, int j);
     inline float sfVectorNormSq(const sf::Vector2f& vec);
+    inline int minOfTwoInts(int a, int b){
+        return (a<b)?a:b;
+    }
     void updateParticlesIndicesInCollisionGrid(); //Note, this will call reset on its own
     void handleCollisionsFromUpdatedGrid(const int& num_global_iterations, const int& num_cell_iterations);
+    void handleCollisionsFromUpdatedGridParallel(const int& num_global_iterations, const int& num_cell_iterations);
 public:
     ParticleSystem(unsigned int count);
     void resetParticlesRandom();

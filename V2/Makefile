@@ -2,7 +2,7 @@
 
 # Compiler flags
 CXX = g++
-CXXFLAGS = -std=c++17 -Wall -Wextra -O1 -march=native
+CXXFLAGS = -std=c++17 -Wall -Wextra -O1 -march=native -fopenmp 
 SFML_FLAGS = `pkg-config --cflags sfml-graphics sfml-window sfml-system`
 SFML_LIBS = `pkg-config --libs sfml-graphics sfml-window sfml-system`
 
