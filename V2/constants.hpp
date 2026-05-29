@@ -14,7 +14,7 @@
 #define RESERVE_UNITS_PER_COLLISION_GRID_CELL 1
 #define COMPUTE_PER_RENDER 20
 
-#define COLLISIO_GLOBAL_NUM_ITERATIONS 2
+#define COLLISIO_GLOBAL_NUM_ITERATIONS 1
 #define COLLISION_CELL_NUM_ITERATIONS 1
 
 #define RESERVE_SURROUNDING_PARTCILES 12
@@ -23,6 +23,7 @@
 // Physics constants
 #define GRAVITY (-1e-1f)
 #define DT (5e-5)
+#define ELASTICITY 0.9f
 
 
 // Image rendering constants
@@ -30,7 +31,7 @@
 #define DEFAULT_IDS_COLOUR_CACHE_PATH ((std::string)"ids_colour_cache.txt")
 // Also, use in mode 0 for not doing anything, mode 1 for writing to cache, mode 2 for reading from cache
 
-// #define DEFAULT_COLOUR_FOR_UNASSIGNED_ID sf::Color(22, 22, 22)
+#define DEFAULT_COLOUR_FOR_UNASSIGNED_ID sf::Color(22, 22, 22)
 #define DEFAULT_COLOUR_FOR_UNASSIGNED_ID sf::Color::Blue
 
 
