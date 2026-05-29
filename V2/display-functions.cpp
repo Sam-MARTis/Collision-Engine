@@ -99,6 +99,8 @@ void ParticleSystem::draw(sf::RenderTarget& target, sf::RenderStates states) con
 
 
 void ParticleSystem::ComputeColourIdMapping(){
+    std::cout << "Computing colour id mapping\n";
+    std::cout << "Reference image path: " << reference_image_path << "\n";
     sf::Image reference_image(reference_image_path);
     if (!reference_image.getSize().x || !reference_image.getSize().y)
         throw std::runtime_error("Could not load reference image for computing colour id mapping");

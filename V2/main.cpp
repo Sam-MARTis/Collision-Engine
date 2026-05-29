@@ -113,12 +113,15 @@ int main(int argc, char *argv[])
             std::vector<sf::Vector2f> vels;
             poss.reserve(NUM_PARTICLES_TO_ADD_EVERY_TIME);
             vels.reserve(NUM_PARTICLES_TO_ADD_EVERY_TIME);
-
-            for (int i = 0; i < NUM_PARTICLES_TO_ADD_EVERY_TIME; i++)
+     for (int i = 0; i < NUM_PARTICLES_TO_ADD_EVERY_TIME; i++)
             {
-
-                poss.push_back(sf::Vector2f({4 * PARTICLE_RADIUS, 1.0f - (i + 2) * 2.4f * PARTICLE_RADIUS}));
+                // if(i&1){
+                poss.push_back(sf::Vector2f({2 * PARTICLE_RADIUS, 1.0f - (i + 1) * 2.4f * PARTICLE_RADIUS}));
                 vels.push_back(sf::Vector2f({PARTICLE_ADDING_VELOCITY_X, 0.0f}));
+                // }else{
+                //     poss.push_back(sf::Vector2f({1 - 4 * PARTICLE_RADIUS, 1.0f - (i + 2) * 2.4f * PARTICLE_RADIUS}));
+                //     vels.push_back(sf::Vector2f({-PARTICLE_ADDING_VELOCITY_X, 0.0f}));
+                // }
                 // particles.addParticle(sf::Vector2f({0.1f, 0.7f + i* 2.4f*PARTICLE_RADIUS}), sf::Vector2f({PARTICLE_ADDING_VELOCITY_X, 0.0f}));
                 // particles.addParticle(sf::Vector2f({0.1f, 0.82f}), sf::Vector2f({6.1f, 0.0f}));
                 // particles.addParticle(sf::Vector2f({0.1f, 0.78f}), sf::Vector2f({6.1f, 0.0f}));
@@ -126,25 +129,29 @@ int main(int argc, char *argv[])
             particles.addParticles(poss, vels);
             add_time -= time_to_add_particles;
         }
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A))
-        {
-            std::cout << "A pressed, adding particles\n";
-            std::vector<sf::Vector2f> poss;
-            std::vector<sf::Vector2f> vels;
-            poss.reserve(NUM_PARTICLES_TO_ADD_EVERY_TIME);
-            vels.reserve(NUM_PARTICLES_TO_ADD_EVERY_TIME);
+        // if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A))
+        // {
+        //     std::cout << "A pressed, adding particles\n";
+        //     std::vector<sf::Vector2f> poss;
+        //     std::vector<sf::Vector2f> vels;
+        //     poss.reserve(NUM_PARTICLES_TO_ADD_EVERY_TIME);
+        //     vels.reserve(NUM_PARTICLES_TO_ADD_EVERY_TIME);
 
-            for (int i = 0; i < NUM_PARTICLES_TO_ADD_EVERY_TIME; i++)
-            {
-
-                poss.push_back(sf::Vector2f({4 * PARTICLE_RADIUS, 1.0f - (i + 2) * 2.4f * PARTICLE_RADIUS}));
-                vels.push_back(sf::Vector2f({PARTICLE_ADDING_VELOCITY_X, 0.0f}));
-                // particles.addParticle(sf::Vector2f({0.1f, 0.7f + i* 2.4f*PARTICLE_RADIUS}), sf::Vector2f({PARTICLE_ADDING_VELOCITY_X, 0.0f}));
-                // particles.addParticle(sf::Vector2f({0.1f, 0.82f}), sf::Vector2f({6.1f, 0.0f}));
-                // particles.addParticle(sf::Vector2f({0.1f, 0.78f}), sf::Vector2f({6.1f, 0.0f}));
-            }
-            particles.addParticles(poss, vels);
-        }
+        //     for (int i = 0; i < NUM_PARTICLES_TO_ADD_EVERY_TIME; i++)
+        //     {
+        //         if(i&1){
+        //         poss.push_back(sf::Vector2f({4 * PARTICLE_RADIUS, 1.0f - (i + 2) * 2.4f * PARTICLE_RADIUS}));
+        //         vels.push_back(sf::Vector2f({PARTICLE_ADDING_VELOCITY_X, 0.0f}));
+        //         }else{
+        //             poss.push_back(sf::Vector2f({1 - 4 * PARTICLE_RADIUS, 1.0f - (i + 2) * 2.4f * PARTICLE_RADIUS}));
+        //             vels.push_back(sf::Vector2f({-PARTICLE_ADDING_VELOCITY_X, 0.0f}));
+        //         }
+        //         // particles.addParticle(sf::Vector2f({0.1f, 0.7f + i* 2.4f*PARTICLE_RADIUS}), sf::Vector2f({PARTICLE_ADDING_VELOCITY_X, 0.0f}));
+        //         // particles.addParticle(sf::Vector2f({0.1f, 0.82f}), sf::Vector2f({6.1f, 0.0f}));
+        //         // particles.addParticle(sf::Vector2f({0.1f, 0.78f}), sf::Vector2f({6.1f, 0.0f}));
+        //     }
+        //     particles.addParticles(poss, vels);
+        // }
         if(sf::Keyboard::isKeyPressed(sf::Keyboard::Key::S))
         {
             std::cout << "S pressed, saving colour id mapping cache\n";

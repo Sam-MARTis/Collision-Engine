@@ -37,11 +37,13 @@ ParticleSystem::ParticleSystem(unsigned int count, int run_mode, const std::stri
     }
     reference_image_path = reference_path;
     ids_colour_cache_path = cache_path;
+    std::cout << "Reference image path: " << reference_image_path << "\n";
+     std::cout << "Cache path: " << ids_colour_cache_path << "\n";
     if(run_mode ==1){
     particle_dynamics.reserve(MAX_PARTICLES);
     
-        ids_colour_cache_path = cache_path;
-        reference_image_path = DEFAULT_IMAGE_REFERENCE_PATH;
+        // ids_colour_cache_path = cache_path;
+        // reference_image_path = DEFAULT_IMAGE_REFERENCE_PATH;
         // std::cout <<"\n\nFilepath: "<<reference_image_path<<"\n";
         std::ifstream file(ids_colour_cache_path);
         if (!file.is_open())
@@ -251,8 +253,8 @@ void ParticleSystem::handleCollisionsFromUpdatedGridParallel(const int &num_glob
                     // }
                 }
             }
+            #pragma omp barrier
         }
-        #pragma omp barrier
     }
 }
 
