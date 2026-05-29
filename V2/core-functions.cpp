@@ -102,10 +102,8 @@ void ParticleSystem::updateParticlesIndicesInCollisionGrid()
 
 void ParticleSystem::handleCollisionsFromUpdatedGrid(const int &num_global_iterations, const int &num_cell_iterations)
 {
-    bool something_done_in_this_global_iteration = true;
-    for (int global_iter_count = 0; (global_iter_count < num_global_iterations) && something_done_in_this_global_iteration; global_iter_count++)
+    for (int global_iter_count = 0; (global_iter_count < num_global_iterations); global_iter_count++)
     {
-        bool something_done_in_this_cell_iteration = false;
         for (int i = 1; i < grid_cols - 1; i++)
         {
             for (int j = 1; j < grid_rows - 1; j++)
@@ -147,33 +145,28 @@ void ParticleSystem::handleCollisionsFromUpdatedGrid(const int &num_global_itera
                 bool something_done_in_this_cell_iteration = true;
                 for (int cell_iter_count = 0; (cell_iter_count < num_cell_iterations) && something_done_in_this_cell_iteration; cell_iter_count++)
                 {
-                    something_done_in_this_cell_iteration = false;
-                    for (const unsigned int &id_self : particles_in_this_cell)
-                    {
+                    for(const unsigned int &id_self : all_particles){
                         ParticleKinematics &this_particle = particle_dynamics[id_self];
                         for (unsigned int &id_other : all_particles)
                         {
-                            if (id_self != id_other)
+                            if(id_other>=id_self) continue;
+                            ParticleKinematics &other_particle = particle_dynamics[id_other];
+                            const sf::Vector2f dr = other_particle.pos - this_particle.pos;
+                            const float ds_sq = sfVectorNormSq(dr);
+                            if (ds_sq < diam_sq)
                             {
-                                ParticleKinematics &other_particle = particle_dynamics[id_other];
-                                const sf::Vector2f dr = other_particle.pos - this_particle.pos;
-                                const float ds_sq = sfVectorNormSq(dr);
-                                if (ds_sq < diam_sq)
-                                {
-                                    something_done_in_this_cell_iteration = true;
-                                    const float ds = sqrtf(ds_sq);
-                                    const float inv_ds = 1.0f / (ds);
-                                    const float overlap_each_particle = PARTICLE_RADIUS - ds * 0.5f;
-                                    const sf::Vector2f delta = dr * (overlap_each_particle * inv_ds);
-                                    this_particle.pos -= delta;
-                                    other_particle.pos += delta;
-                                }
+                                const float ds = sqrtf(ds_sq);
+                                const float inv_ds = 1.0f / (ds);
+                                const float overlap_each_particle = PARTICLE_RADIUS - ds * 0.5f;
+                                const sf::Vector2f delta = dr * (overlap_each_particle * inv_ds);
+                                this_particle.pos -= delta;
+                                other_particle.pos += delta;
                             }
                         }
+                        
                     }
                 }
-                if (something_done_in_this_cell_iteration)
-                    something_done_in_this_global_iteration = true;
+
             }
         }
     }

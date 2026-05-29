@@ -1,10 +1,10 @@
 #pragma once
-#define PARTICLE_RADIUS 3.4e-3f
+#define PARTICLE_RADIUS 3.0e-3f
 #define PARTICLE_COUNT 0
-#define MAX_PARTICLES 25200
+#define MAX_PARTICLES 33000
 
 // 18000 particles and 4e-3f radius
-// 3.4e-3f radius allows for 25000 particles
+// 3.4e-3f radius allows for 25200 particles
 #define WINDOW_SIZE_X 1000
 #define WINDOW_SIZE_Y 1000
 
@@ -12,17 +12,17 @@
 #define NUM_PARTICLES_TO_ADD_EVERY_TIME 20
 // Computational constants
 #define RESERVE_UNITS_PER_COLLISION_GRID_CELL 1
-#define COMPUTE_PER_RENDER 5
+#define COMPUTE_PER_RENDER 20
 
-#define COLLISIO_GLOBAL_NUM_ITERATIONS 3
-#define COLLISION_CELL_NUM_ITERATIONS 5
+#define COLLISIO_GLOBAL_NUM_ITERATIONS 2
+#define COLLISION_CELL_NUM_ITERATIONS 1
 
 #define RESERVE_SURROUNDING_PARTCILES 12
 #define RESERVE_CURRENT_CELL_PARTICLES 2
 
 // Physics constants
 #define GRAVITY (-1e-1f)
-#define DT (1e-4)
+#define DT (5e-5)
 
 
 // Image rendering constants
