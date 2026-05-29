@@ -103,10 +103,10 @@ void ParticleSystem::ComputeColourIdMapping(){
     if (!reference_image.getSize().x || !reference_image.getSize().y)
         throw std::runtime_error("Could not load reference image for computing colour id mapping");
     auto [img_width, img_height] = reference_image.getSize();
-    const float fraction_to_fit = 0.8f;
-    const float scaling_factor_x = img_width *fraction_to_fit;
-    const float scaling_factor_y = img_height*fraction_to_fit;
-    const float scaling_factor = scaling_factor_x < scaling_factor_y ? scaling_factor_x : scaling_factor_y;
+    const float fraction_to_fit = 1.05f;
+    const float scaling_factor_x = img_width /fraction_to_fit;
+    const float scaling_factor_y = img_height/fraction_to_fit;
+    const float scaling_factor = scaling_factor_x > scaling_factor_y ? scaling_factor_x : scaling_factor_y;
     const float origin_x = 0.5f;
     const float origin_y = 0.5f;
     colour_id_mapping.clear();

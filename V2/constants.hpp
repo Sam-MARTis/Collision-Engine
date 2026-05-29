@@ -1,8 +1,10 @@
 #pragma once
-#define PARTICLE_RADIUS 4e-3f
+#define PARTICLE_RADIUS 3.4e-3f
 #define PARTICLE_COUNT 0
-#define MAX_PARTICLES 18000
+#define MAX_PARTICLES 25200
 
+// 18000 particles and 4e-3f radius
+// 3.4e-3f radius allows for 25000 particles
 #define WINDOW_SIZE_X 1000
 #define WINDOW_SIZE_Y 1000
 
@@ -10,7 +12,7 @@
 #define NUM_PARTICLES_TO_ADD_EVERY_TIME 20
 // Computational constants
 #define RESERVE_UNITS_PER_COLLISION_GRID_CELL 1
-#define COMPUTE_PER_RENDER 20
+#define COMPUTE_PER_RENDER 10
 
 #define COLLISIO_GLOBAL_NUM_ITERATIONS 3
 #define COLLISION_CELL_NUM_ITERATIONS 5
@@ -28,6 +30,7 @@
 #define DEFAULT_IDS_COLOUR_CACHE_PATH ((std::string)"ids_colour_cache.txt")
 // Also, use in mode 0 for not doing anything, mode 1 for writing to cache, mode 2 for reading from cache
 
+// #define DEFAULT_COLOUR_FOR_UNASSIGNED_ID sf::Color(22, 22, 22)
 #define DEFAULT_COLOUR_FOR_UNASSIGNED_ID sf::Color::Blue
 
 

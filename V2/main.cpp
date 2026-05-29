@@ -17,7 +17,8 @@ int main(int argc, char *argv[])
         if (mode_arg == "1")
         {
             run_mode = 1;
-            argc > 2 ? cache_path = argv[2] : cache_path = DEFAULT_IDS_COLOUR_CACHE_PATH;
+            argc > 2 ? reference_path = argv[2] : reference_path = DEFAULT_IMAGE_REFERENCE_PATH;
+            argc > 3 ? cache_path = argv[3] : cache_path = DEFAULT_IDS_COLOUR_CACHE_PATH;
         }
         else if (mode_arg == "2")
         {

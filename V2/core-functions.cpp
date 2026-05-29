@@ -71,6 +71,7 @@ sf::Vector2i ParticleSystem::obtainIndexCoordsFromPosition(sf::Vector2f pos)
     const int y_coord = ceil((pos.y) / (2.0f * PARTICLE_RADIUS)) + 2;
     return sf::Vector2i({x_coord, y_coord});
 }
+
 void ParticleSystem::updateParticlesIndicesInCollisionGrid()
 {
     resetCollisionGrid();
@@ -304,8 +305,7 @@ void ParticleSystem::addGravitationalAcceleration()
         particle_dynamics[i].acc.y += GRAVITY;
     }
 }
-void ParticleSystem::stepForwardTime()
-{
+void ParticleSystem::stepForwardTime(){
     for (int i = 0; i < particle_count; i++)
     {
         ParticleKinematics &particle = particle_dynamics[i];
