@@ -255,10 +255,21 @@ void ParticleSystem::solveCollisions(const int collision_num_global_iterations, 
 }
 
 void ParticleSystem::addGravitationalAcceleration()
-{
+{   
+    const sf::Vector2f center({0.5f, 0.5f});
     for (int i = 0; i < particle_count; i++)
-    {
-        particle_dynamics[i].acc.y += GRAVITY;
+    {   
+        ParticleKinematics &this_particle = particle_dynamics[i];
+        // sf::Vector2f dr = this_particle.pos - center;
+        // const float dist_sq = sfVectorNormSq(dr);
+        // const float dist = sqrtf(dist_sq);
+        // // const float inv_dist = 1.0f/(dist + 1e-8f);
+        // const float x_pos = powf(dr.x, 1);
+        // const float y_pos = powf(dr.y, 1);
+        // this_particle.acc.x += GRAVITY*x_pos;
+        // this_particle.acc.y += GRAVITY*y_pos;
+        this_particle.acc.y += GRAVITY;
+        // this_particle.prev_pos += (this_particle.pos - this_particle.prev_pos) * VISCOCITY;
     }
 }
 void ParticleSystem::stepForwardTime()

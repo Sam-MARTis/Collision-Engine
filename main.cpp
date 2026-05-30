@@ -117,7 +117,7 @@ int main(int argc, char *argv[])
             {
                 // if(i&1){
                 poss.push_back(sf::Vector2f({2 * PARTICLE_RADIUS, 1.0f - (i + 1) * 2.4f * PARTICLE_RADIUS}));
-                vels.push_back(sf::Vector2f({PARTICLE_ADDING_VELOCITY_X, 0.0f}));
+                vels.push_back(sf::Vector2f({PARTICLE_ADDING_VELOCITY_X, PARTICLE_ADDING_VELOCITY_Y}));
                 // }else{
                 //     poss.push_back(sf::Vector2f({1 - 4 * PARTICLE_RADIUS, 1.0f - (i + 2) * 2.4f * PARTICLE_RADIUS}));
                 //     vels.push_back(sf::Vector2f({-PARTICLE_ADDING_VELOCITY_X, 0.0f}));

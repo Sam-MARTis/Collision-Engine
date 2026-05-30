@@ -9,6 +9,7 @@
 #define WINDOW_SIZE_Y 1000
 
 #define PARTICLE_ADDING_VELOCITY_X 7.0f
+#define PARTICLE_ADDING_VELOCITY_Y -0.0f
 #define NUM_PARTICLES_TO_ADD_EVERY_TIME 20
 // Computational constants
 #define RESERVE_UNITS_PER_COLLISION_GRID_CELL 1
@@ -22,8 +23,9 @@
 
 // Physics constants
 #define GRAVITY (-1e-1f)
+#define VISCOCITY (0.0f)
 #define DT (5e-5)
-#define ELASTICITY 0.9f
+#define ELASTICITY 0.3f
 
 
 // Image rendering constants
